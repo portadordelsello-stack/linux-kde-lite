@@ -20,6 +20,8 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     tigervnc-common \
     novnc \
     websockify \
+    autocutsel \
+    xclip \
     dbus-x11 \
     x11-xserver-utils \
     xterm \
@@ -114,6 +116,15 @@ xset s noblank 2>/dev/null || true
 
 [ -r "$HOME/.Xresources" ] && xrdb "$HOME/.Xresources"
 
+# Sincronización de portapapeles bidireccional (VNC <-> X11 <-> Aplicaciones)
+if command -v vncconfig >/dev/null 2>&1; then
+    vncconfig -nowin &
+fi
+if command -v autocutsel >/dev/null 2>&1; then
+    autocutsel -fork
+    autocutsel -selection CLIPBOARD -fork
+fi
+
 # Iniciar bus de sesión D-Bus
 if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
     eval $(dbus-launch --sh-syntax --exit-with-session)
@@ -134,7 +145,7 @@ depth=24
 localhost=yes
 EOF
 
-echo "[4/4] Optimizando acceso web de noVNC..."
+echo "[4/4] Optimizando acceso web de noVNC y portapapeles..."
 # Configurar redirección automática con autoconnect y escalado dinámico
 if [ -d "/usr/share/novnc" ]; then
     sudo bash -c 'cat << "EOF" > /usr/share/novnc/index.html
@@ -151,6 +162,27 @@ if [ -d "/usr/share/novnc" ]; then
 </body>
 </html>
 EOF'
+
+    # Habilitar integración automática del portapapeles en noVNC
+    sudo python3 -c '
+UI_JS = "/usr/share/novnc/app/ui.js"
+try:
+    with open(UI_JS, "r") as f:
+        content = f.read()
+    if "noVNC_clipboard_text\x27).addEventListener(\x27input\x27" not in content:
+        content = content.replace(
+            "document.getElementById(\"noVNC_clipboard_text\")\n            .addEventListener(\x27change\x27, UI.clipboardSend);",
+            "document.getElementById(\"noVNC_clipboard_text\").addEventListener(\x27change\x27, UI.clipboardSend);\n        document.getElementById(\"noVNC_clipboard_text\").addEventListener(\x27input\x27, UI.clipboardSend);\n\n        window.addEventListener(\x27paste\x27, (e) => {\n            if (document.activeElement && document.activeElement.id === \"noVNC_clipboard_text\") return;\n            const p = e.clipboardData ? e.clipboardData.getData(\"text\") : null;\n            if (p && UI.rfb) { document.getElementById(\"noVNC_clipboard_text\").value = p; UI.rfb.clipboardPasteFrom(p); }\n        });\n        window.addEventListener(\x27focus\x27, () => {\n            if (navigator.clipboard && navigator.clipboard.readText && UI.rfb) {\n                navigator.clipboard.readText().then(t => { if (t && t !== document.getElementById(\"noVNC_clipboard_text\").value) { document.getElementById(\"noVNC_clipboard_text\").value = t; UI.rfb.clipboardPasteFrom(t); } }).catch(() => {});\n            }\n        });"
+        )
+        content = content.replace(
+            "document.getElementById(\x27noVNC_clipboard_text\x27).value = e.detail.text;\n        Log.Debug(\"<< UI.clipboardReceive\");",
+            "document.getElementById(\x27noVNC_clipboard_text\x27).value = e.detail.text;\n        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(e.detail.text).catch(() => {}); }\n        Log.Debug(\"<< UI.clipboardReceive\");"
+        )
+        with open(UI_JS, "w") as f:
+            f.write(content)
+except Exception as err:
+    print(f"Clipboard patch skipped: {err}")
+' 2>/dev/null || true
 fi
 
 echo "=========================================================="

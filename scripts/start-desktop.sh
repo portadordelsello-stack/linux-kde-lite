@@ -47,7 +47,17 @@ else
     echo "[+] Servidor VNC iniciado correctamente."
 fi
 
-# 3. Iniciar websockify / noVNC en puerto 8080 (puerto web primario) y 6080 (secundario)
+# 3. Asegurar sincronización de portapapeles en la sesión gráfica activa
+export DISPLAY="${DISPLAY_NUM}"
+if command -v vncconfig >/dev/null 2>&1 && ! pgrep -f "vncconfig -nowin" >/dev/null 2>&1; then
+    nohup vncconfig -nowin </dev/null >/dev/null 2>&1 &
+fi
+if command -v autocutsel >/dev/null 2>&1; then
+    pgrep -f "autocutsel -fork" >/dev/null 2>&1 || autocutsel -fork
+    pgrep -f "autocutsel -selection CLIPBOARD -fork" >/dev/null 2>&1 || autocutsel -selection CLIPBOARD -fork
+fi
+
+# 4. Iniciar websockify / noVNC en puerto 8080 (puerto web primario) y 6080 (secundario)
 for PORT in 8080 6080; do
     if pgrep -f "websockify.*${PORT}" > /dev/null 2>&1; then
         echo "[!] websockify ya está corriendo en el puerto ${PORT}."
