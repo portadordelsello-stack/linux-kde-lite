@@ -1,0 +1,18 @@
+{
+  "name": "Linux KDE Lite",
+  "forwardPorts": [8080, 6080],
+  "portsAttributes": {
+    "8080": {
+      "label": "KDE Desktop (noVNC)",
+      "onAutoForward": "openBrowser",
+      "visibility": "public"
+    },
+    "6080": {
+      "label": "KDE Desktop Alternate (noVNC)",
+      "onAutoForward": "silent",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "bash ./scripts/install-desktop.sh",
+  "postStartCommand": "bash ./scripts/start-desktop.sh"
+}
