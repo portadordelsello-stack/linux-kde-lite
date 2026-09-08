@@ -1,6 +1,0 @@
-{
-  "name": "Mex Serigrafía Landing Page",
-  "description": "A professional landing page for Mex Serigrafía offering signage, textile printing, an interactive catalog, a quote estimator, and an AI-powered visualizer to preview products on storefronts.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
