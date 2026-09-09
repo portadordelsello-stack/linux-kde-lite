@@ -125,6 +125,24 @@ function playcode_cs_enqueue_scripts() {
    2. GITHUB OAUTH 2.0 FLOW & CALLBACK
    ========================================================================== */
 
+add_action( 'rest_api_init', 'playcode_cs_register_rest_routes' );
+function playcode_cs_register_rest_routes() {
+	register_rest_route( 'playcode-codespaces/v1', '/oauth/callback', array(
+		'methods'             => 'GET',
+		'callback'            => 'playcode_cs_rest_oauth_callback',
+		'permission_callback' => '__return_true',
+	) );
+}
+
+function playcode_cs_rest_oauth_callback( $request ) {
+	$code = $request->get_param( 'code' );
+	if ( empty( $code ) ) {
+		wp_die( 'Código de autorización no recibido de GitHub.' );
+	}
+	wp_redirect( home_url( '/?playcode_gh_callback=1&code=' . urlencode( $code ) ) );
+	exit;
+}
+
 add_action( 'init', 'playcode_cs_handle_oauth_callback' );
 function playcode_cs_handle_oauth_callback() {
 	if ( ! isset( $_GET['playcode_gh_callback'] ) || ! isset( $_GET['code'] ) ) {
@@ -643,3 +661,4 @@ function playcode_cs_render_admin_settings() {
 	</div>
 	<?php
 }
+
