@@ -120,6 +120,9 @@ EOF
 chmod +x /usr/local/bin/antigravity-ide'
 
 sudo ln -sf /usr/local/bin/antigravity-ide /usr/local/bin/antigravity
+if [ -f "/home/codespace/.gemini/bin/agy" ]; then
+    sudo ln -sf /home/codespace/.gemini/bin/agy /usr/local/bin/agy
+fi
 
 # Configurar iconos y entradas de escritorio
 mkdir -p "$HOME/Desktop"
@@ -137,8 +140,21 @@ StartupWMClass=Antigravity-ide
 Categories=Development;IDE;TextEditor;
 EOF'
 
+sudo bash -c 'cat << "EOF" > /usr/share/applications/antigravity-web.desktop
+[Desktop Entry]
+Name=Antigravity Web Hub (Puerto 3000)
+Comment=Google Antigravity 2.0 Web UI
+Exec=google-chrome --new-window http://localhost:3000
+Icon=/usr/share/pixmaps/antigravity-ide.png
+Type=Application
+StartupNotify=false
+Categories=Development;IDE;
+EOF'
+
 cp /usr/share/applications/antigravity-ide.desktop "$HOME/Desktop/" 2>/dev/null || true
 chmod +x "$HOME/Desktop/antigravity-ide.desktop" 2>/dev/null || true
+cp /usr/share/applications/antigravity-web.desktop "$HOME/Desktop/" 2>/dev/null || true
+chmod +x "$HOME/Desktop/antigravity-web.desktop" 2>/dev/null || true
 
 echo "[2/4] Configurando entorno VNC y credenciales..."
 echo "$USER:$USER" | sudo chpasswd 2>/dev/null || true

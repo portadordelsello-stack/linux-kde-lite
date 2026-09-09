@@ -85,7 +85,10 @@ sleep 2
 
 # 8. Iniciar Antigravity Web Hub en puerto 3000 si está instalado
 AGY_BIN="/home/codespace/.gemini/bin/agy"
-if [ -f "$AGY_BIN" ]; then
+if [ ! -f "$AGY_BIN" ] && command -v agy >/dev/null 2>&1; then
+    AGY_BIN="$(command -v agy)"
+fi
+if [ -f "$AGY_BIN" ] || command -v "$AGY_BIN" >/dev/null 2>&1; then
     if ! pgrep -f "agy.*--hub-port=3000" > /dev/null 2>&1 && ! ss -tulpn 2>/dev/null | grep -E "(:3000\s)" > /dev/null 2>&1; then
         echo "[+] Iniciando Antigravity 2.0 Web Hub en el puerto 3000..."
         nohup "$AGY_BIN" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite </dev/null >"${LOG_DIR}/antigravity-hub.log" 2>&1 &

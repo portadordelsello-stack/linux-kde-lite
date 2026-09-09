@@ -28,9 +28,11 @@ Para levantar el servidor gráfico virtual y el cliente web:
 
 ### 3. Conexión desde el navegador
 1. Abre la pestaña **Ports** (Puertos) en la barra inferior de VS Code / GitHub Codespaces.
-2. Localiza el puerto **`8080`** (o `6080`).
-3. Haz clic en el icono del **globo terráqueo** (*Open in Browser*) o abre la URL asignada.
-4. ¡Listo! Accederás directamente a tu sesión de KDE Plasma en pantalla completa.
+2. Localiza el servicio que deseas abrir:
+   * **`8080`** (o `6080`): **Escritorio KDE Plasma Lite (noVNC)** — sesión gráfica completa en navegador.
+   * **`3000`**: **Antigravity 2.0 Web Hub** — interfaz web oficial de asistencia IA y Vibecoding (`https://<codespace>-3000.app.github.dev/`).
+3. Haz clic en el icono del **globo terráqueo** (*Open in Browser*) o abre la URL pública asignada.
+4. ¡Listo! Accederás directamente a tu sesión.
 
 ---
 

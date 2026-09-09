@@ -57,12 +57,14 @@ RUN printf '#!/usr/bin/env bash\nunset ELECTRON_RUN_AS_NODE\nexport DISPLAY="${D
     && chmod +x /usr/local/bin/antigravity-ide \
     && ln -sf /usr/local/bin/antigravity-ide /usr/local/bin/antigravity
 
-# Entrada de escritorio para Antigravity IDE
+# Entrada de escritorio para Antigravity IDE y Antigravity Web Hub
 RUN [ -f /opt/antigravity-ide/resources/app/resources/linux/code.png ] \
     && cp /opt/antigravity-ide/resources/app/resources/linux/code.png /usr/share/pixmaps/antigravity-ide.png \
     || true \
     && printf '[Desktop Entry]\nName=Antigravity IDE\nComment=Google Antigravity Code Editor\nExec=/usr/local/bin/antigravity-ide %%F\nIcon=/usr/share/pixmaps/antigravity-ide.png\nType=Application\nStartupNotify=false\nStartupWMClass=Antigravity-ide\nCategories=Development;IDE;TextEditor;\n' \
-        > /usr/share/applications/antigravity-ide.desktop
+        > /usr/share/applications/antigravity-ide.desktop \
+    && printf '[Desktop Entry]\nName=Antigravity Web Hub (Puerto 3000)\nComment=Google Antigravity 2.0 Web UI\nExec=google-chrome --new-window http://localhost:3000\nIcon=/usr/share/pixmaps/antigravity-ide.png\nType=Application\nStartupNotify=false\nCategories=Development;IDE;\n' \
+        > /usr/share/applications/antigravity-web.desktop
 
 # ---------------------------------------------------------------------------
 # 4. Configurar noVNC: página de redirección automática
@@ -102,7 +104,9 @@ RUN mkdir -p /home/codespace/Desktop \
     && cp /usr/share/applications/google-chrome.desktop /home/codespace/Desktop/ 2>/dev/null || true \
     && chmod +x /home/codespace/Desktop/google-chrome.desktop 2>/dev/null || true \
     && cp /usr/share/applications/antigravity-ide.desktop /home/codespace/Desktop/ 2>/dev/null || true \
-    && chmod +x /home/codespace/Desktop/antigravity-ide.desktop 2>/dev/null || true
+    && chmod +x /home/codespace/Desktop/antigravity-ide.desktop 2>/dev/null || true \
+    && cp /usr/share/applications/antigravity-web.desktop /home/codespace/Desktop/ 2>/dev/null || true \
+    && chmod +x /home/codespace/Desktop/antigravity-web.desktop 2>/dev/null || true
 
 # Configuración de VNC
 RUN mkdir -p /home/codespace/.vnc \
