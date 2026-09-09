@@ -12,9 +12,12 @@ FROM mcr.microsoft.com/devcontainers/universal:2
 ENV DEBIAN_FRONTEND=noninteractive
 
 # ---------------------------------------------------------------------------
-# 1. Instalar KDE Plasma + TigerVNC + noVNC + herramientas
+# 1. Limpiar repositorios con llaves GPG rotas e instalar KDE + Chrome + VNC
 # ---------------------------------------------------------------------------
 RUN echo "debconf debconf/frontend select Noninteractive" | debconf-set-selections \
+    && rm -f /etc/apt/sources.list.d/yarn*.list 2>/dev/null || true \
+    && rm -f /etc/apt/sources.list.d/github-cli*.list 2>/dev/null || true \
+    && wget -q -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
         kde-plasma-desktop \
@@ -33,20 +36,10 @@ RUN echo "debconf debconf/frontend select Noninteractive" | debconf-set-selectio
         curl \
         wget \
         xdotool \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# ---------------------------------------------------------------------------
-# 2. Instalar Google Chrome
-# ---------------------------------------------------------------------------
-RUN wget -q -O /tmp/google-chrome.deb \
-        https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && apt-get update -y \
-    && apt-get install -y /tmp/google-chrome.deb \
+        /tmp/google-chrome.deb \
     && rm -f /tmp/google-chrome.deb \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    # Optimizar Chrome para contenedores
     && sed -i 's|exec -a "$0" "$HERE/chrome" "$@"|exec -a "$0" "$HERE/chrome" --disable-dev-shm-usage --disable-features=WebAssemblySIMD "$@"|' \
         /opt/google/chrome/google-chrome 2>/dev/null || true
 
@@ -120,3 +113,4 @@ RUN mkdir -p /home/codespace/.vnc \
         > /home/codespace/.vnc/config
 
 USER root
+
