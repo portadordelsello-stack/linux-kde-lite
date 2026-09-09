@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
 DISPLAY_NUM=":1"
 VNC_PORT="5901"
@@ -7,8 +6,11 @@ WEB_PORT="6080"
 
 echo "=== Estado de KDE Plasma Desktop ==="
 
-# Verificar VNC
-if pgrep -f "Xvnc :1" > /dev/null 2>&1 || pgrep -f "Xtigervnc :1" > /dev/null 2>&1; then
+# Verificar VNC (busca proceso vncserver/Xtigervnc o socket en puerto 5901)
+if pgrep -f "Xvnc :1" > /dev/null 2>&1 \
+   || pgrep -f "Xtigervnc :1" > /dev/null 2>&1 \
+   || pgrep -f "vncserver :1" > /dev/null 2>&1 \
+   || ss -tlpn 2>/dev/null | grep -q ":${VNC_PORT}"; then
     echo "  [ACTIVO] Servidor VNC en ${DISPLAY_NUM} (puerto ${VNC_PORT})"
 else
     echo "  [INACTIVO] Servidor VNC no está corriendo."
@@ -35,6 +37,17 @@ if pgrep -f "kwin_x11" > /dev/null 2>&1; then
     echo "  [ACTIVO] Gestor de ventanas (kwin_x11) activo (barras de título y bordes)."
 else
     echo "  [ALERTA] Gestor de ventanas (kwin_x11) inactivo."
+fi
+
+# Verificar Antigravity 2.0 Web Hub (puerto 3000)
+if pgrep -f "agy.*--hub-port=3000" > /dev/null 2>&1 \
+   || ss -tlpn 2>/dev/null | grep -q ":3000 "; then
+    echo "  [ACTIVO] Antigravity 2.0 Web Hub escuchando en el puerto 3000"
+    if [ -n "${CODESPACE_NAME:-}" ]; then
+        echo "  [URL]    https://${CODESPACE_NAME}-3000.app.github.dev/"
+    fi
+else
+    echo "  [INACTIVO] Antigravity 2.0 Web Hub no está corriendo en el puerto 3000."
 fi
 
 echo "====================================="
