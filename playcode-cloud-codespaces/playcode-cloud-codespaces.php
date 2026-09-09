@@ -68,6 +68,28 @@ function playcode_cs_section_labels( $labels ) {
 	return $labels;
 }
 
+// 1.2b. Reorder Menu Sections: move 'Cuenta y ajustes' (account) strictly to the very bottom of the sidebar
+add_filter( 'masterstudy_account_menu_section_order', 'playcode_cs_section_order', 9999 );
+function playcode_cs_section_order( $order ) {
+	if ( ! is_array( $order ) ) {
+		$order = array( 'main', 'communication', 'progress', 'finance' );
+	}
+
+	// Registered sections that should precede 'account'
+	$known_sections = array( 'main', 'communication', 'codespace', 'recursos', 'progress', 'finance' );
+
+	// Merge existing order with known sections, preserving unique keys
+	$merged = array_unique( array_merge( $order, $known_sections ) );
+
+	// Remove 'account' from wherever it was
+	$merged = array_values( array_diff( $merged, array( 'account' ) ) );
+
+	// Append 'account' (Cuenta y ajustes) at the absolute bottom
+	$merged[] = 'account';
+
+	return $merged;
+}
+
 // 1.3. Add Sidebar Menu Items in Student Dashboard
 add_filter( 'stm_lms_menu_items', 'playcode_cs_add_menu_items', 9999 );
 add_filter( 'stm_lms_sorted_menu', 'playcode_cs_add_menu_items', 9999 );
