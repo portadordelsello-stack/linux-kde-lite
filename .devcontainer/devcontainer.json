@@ -16,5 +16,13 @@
       "visibility": "public"
     }
   },
-  "postStartCommand": "/usr/local/bin/start-desktop.sh"
+  "postStartCommand": "/usr/local/bin/start-desktop.sh",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "security.workspace.trust.enabled": false,
+        "security.workspace.trust.startupPrompt": "never"
+      }
+    }
+  }
 }
