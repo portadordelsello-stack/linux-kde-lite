@@ -114,3 +114,18 @@ RUN mkdir -p /home/codespace/.vnc \
 
 USER root
 
+# ---------------------------------------------------------------------------
+# 7. Script global de inicio del escritorio: /usr/local/bin/start-desktop.sh
+# ---------------------------------------------------------------------------
+COPY start-desktop.sh /usr/local/bin/start-desktop.sh
+RUN chmod +x /usr/local/bin/start-desktop.sh \
+    && ln -sf /usr/local/bin/start-desktop.sh /usr/local/bin/start-desktop
+
+# ---------------------------------------------------------------------------
+# 8. Autostart secundario: garantiza arranque en cualquier conexión/terminal
+# ---------------------------------------------------------------------------
+COPY 01-start-desktop.sh /etc/profile.d/01-start-desktop.sh
+RUN chmod +x /etc/profile.d/01-start-desktop.sh
+
+
+

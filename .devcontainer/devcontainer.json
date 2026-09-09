@@ -16,5 +16,5 @@
       "visibility": "public"
     }
   },
-  "postStartCommand": "bash ${containerWorkspaceFolder}/scripts/start-desktop.sh || bash ./scripts/start-desktop.sh"
+  "postStartCommand": "/usr/local/bin/start-desktop.sh"
 }
