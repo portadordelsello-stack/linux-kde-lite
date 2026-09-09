@@ -11,6 +11,24 @@ echo "=========================================================="
 echo " Iniciando KDE Plasma Lite Desktop"
 echo "=========================================================="
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOCK_FILE="/tmp/.install-desktop.lock"
+
+# 0. Si hay una instalación en curso, esperar a que finalice
+if [ -f "$LOCK_FILE" ]; then
+    echo "[!] Detectada instalación de escritorio en curso. Esperando finalización..."
+    while [ -f "$LOCK_FILE" ]; do
+        sleep 3
+    done
+    echo "[+] La instalación previa ha finalizado."
+fi
+
+# 0.1 Si TigerVNC o noVNC no están instalados, auto-instalar inmediatamente
+if ! command -v vncserver >/dev/null 2>&1 || [ ! -d "/usr/share/novnc" ]; then
+    echo "[!] Entorno gráfico no encontrado. Ejecutando instalación automática..."
+    bash "$SCRIPT_DIR/install-desktop.sh"
+fi
+
 # Ampliar memoria compartida para evitar fallos de Chrome / WebAssembly en contenedores
 sudo mount -o remount,size=2G /dev/shm 2>/dev/null || true
 

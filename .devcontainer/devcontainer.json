@@ -13,6 +13,7 @@
       "visibility": "public"
     }
   },
-  "postCreateCommand": "bash ./scripts/install-desktop.sh",
-  "postStartCommand": "bash ./scripts/start-desktop.sh"
+  "updateContentCommand": "bash ${containerWorkspaceFolder}/scripts/install-desktop.sh || bash ./scripts/install-desktop.sh",
+  "postCreateCommand": "bash ${containerWorkspaceFolder}/scripts/install-desktop.sh || bash ./scripts/install-desktop.sh",
+  "postStartCommand": "bash ${containerWorkspaceFolder}/scripts/start-desktop.sh || bash ./scripts/start-desktop.sh"
 }

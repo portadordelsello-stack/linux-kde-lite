@@ -7,27 +7,77 @@ echo "=========================================================="
 
 export DEBIAN_FRONTEND=noninteractive
 
+LOCK_FILE="/tmp/.install-desktop.lock"
+DONE_FILE="/tmp/.install-desktop.done"
+
+# Si ya hay otra instancia ejecutando la instalación, esperar a que termine
+if [ -f "$LOCK_FILE" ]; then
+    PID=$(cat "$LOCK_FILE" 2>/dev/null || echo "")
+    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+        echo "[!] Ya hay una instalación en curso (PID: $PID). Esperando a que finalice..."
+        while kill -0 "$PID" 2>/dev/null; do
+            sleep 3
+        done
+        echo "[+] La instalación previa ha concluido."
+        exit 0
+    fi
+fi
+
+# Registrar PID actual en archivo lock
+echo "$$" > "$LOCK_FILE"
+cleanup() {
+    rm -f "$LOCK_FILE"
+}
+trap cleanup EXIT
+
 echo "debconf debconf/frontend select Noninteractive" | sudo debconf-set-selections 2>/dev/null || true
 
-echo "[1/4] Actualizando lista de paquetes e instalando dependencias..."
-sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    kde-plasma-desktop \
-    kwin-x11 \
-    konsole \
-    dolphin \
-    tigervnc-standalone-server \
-    tigervnc-common \
-    novnc \
-    websockify \
-    autocutsel \
-    xclip \
-    dbus-x11 \
-    x11-xserver-utils \
-    xterm \
-    curl \
-    wget \
-    xdotool
+wait_for_apt_lock() {
+    local max_wait=180
+    local waited=0
+    while fuser /var/lib/dpkg/lock >/dev/null 2>&1 || \
+          fuser /var/lib/apt/lists/lock >/dev/null 2>&1 || \
+          fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+        echo "[...] Esperando a que otros procesos del sistema liberen APT/dpkg ($waited seg)..."
+        sleep 3
+        waited=$((waited + 3))
+        if [ "$waited" -ge "$max_wait" ]; then
+            echo "[!] Advertencia: Tiempo de espera agotado para el bloqueo de APT. Intentando continuar..."
+            break
+        fi
+    done
+}
+
+# Comprobar si los paquetes base ya están instalados para evitar demoras innecesarias
+if ! command -v startplasma-x11 >/dev/null 2>&1 || \
+   ! command -v vncserver >/dev/null 2>&1 || \
+   [ ! -d "/usr/share/novnc" ] || \
+   ! command -v autocutsel >/dev/null 2>&1; then
+
+    echo "[1/4] Actualizando lista de paquetes e instalando dependencias..."
+    wait_for_apt_lock
+    sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
+    wait_for_apt_lock
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        kde-plasma-desktop \
+        kwin-x11 \
+        konsole \
+        dolphin \
+        tigervnc-standalone-server \
+        tigervnc-common \
+        novnc \
+        websockify \
+        autocutsel \
+        xclip \
+        dbus-x11 \
+        x11-xserver-utils \
+        xterm \
+        curl \
+        wget \
+        xdotool
+else
+    echo "[1/4] Dependencias base (KDE, TigerVNC, noVNC, autocutsel) ya instaladas. Omitiendo apt-get."
+fi
 
 if ! command -v google-chrome >/dev/null 2>&1; then
     echo "[+] Instalando Google Chrome oficial..."
@@ -184,6 +234,7 @@ except Exception as err:
     print(f"Clipboard patch skipped: {err}")
 ' 2>/dev/null || true
 fi
+touch "$DONE_FILE" 2>/dev/null || true
 
 echo "=========================================================="
 echo " ¡Instalación completada con éxito!"
