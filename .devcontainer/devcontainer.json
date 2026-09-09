@@ -1,5 +1,8 @@
 {
   "name": "Linux KDE Lite",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
   "forwardPorts": [8080, 6080],
   "portsAttributes": {
     "8080": {
@@ -13,7 +16,5 @@
       "visibility": "public"
     }
   },
-  "updateContentCommand": "bash ${containerWorkspaceFolder}/scripts/install-desktop.sh || bash ./scripts/install-desktop.sh",
-  "postCreateCommand": "bash ${containerWorkspaceFolder}/scripts/install-desktop.sh || bash ./scripts/install-desktop.sh",
   "postStartCommand": "bash ${containerWorkspaceFolder}/scripts/start-desktop.sh || bash ./scripts/start-desktop.sh"
 }
