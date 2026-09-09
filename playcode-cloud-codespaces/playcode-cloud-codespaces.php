@@ -32,41 +32,59 @@ function playcode_cs_register_custom_route( $routes ) {
 	return $routes;
 }
 
-// 1.2. Add Sidebar Menu Item in Student Dashboard
-add_filter( 'stm_lms_menu_items', 'playcode_cs_add_menu_item', 999 );
-add_filter( 'stm_lms_sorted_menu', 'playcode_cs_add_menu_item', 999 );
+// 1.2. Register Section Label in Student Dashboard
+add_filter( 'masterstudy_account_menu_section_labels', 'playcode_cs_section_labels', 9999 );
+function playcode_cs_section_labels( $labels ) {
+	if ( ! is_array( $labels ) ) {
+		$labels = array();
+	}
+	$labels['codespace'] = 'Laboratorio Linux';
+	return $labels;
+}
+
+// 1.3. Add Sidebar Menu Item in Student Dashboard
+add_filter( 'stm_lms_menu_items', 'playcode_cs_add_menu_item', 9999 );
+add_filter( 'stm_lms_sorted_menu', 'playcode_cs_add_menu_item', 9999 );
 function playcode_cs_add_menu_item( $items ) {
 	if ( empty( $items ) || ! is_array( $items ) ) {
 		return $items;
 	}
 
-	$cs_item = array(
-		'order'        => 16,
-		'id'           => 'codespace_custom',
-		'slug'         => 'codespace',
-		'title'        => 'Mi Escritorio Linux',
-		'icon'         => 'fa-laptop-code',
-		'badge'        => '',
-		'user_profile' => true,
-	);
-
-	$exists = false;
+	// Avoid duplicates
 	foreach ( $items as $item ) {
-		if ( isset( $item['slug'] ) && $item['slug'] === 'codespace' ) {
-			$exists = true;
-			break;
+		if ( isset( $item['id'] ) && 'codespace_custom' === $item['id'] ) {
+			return $items;
 		}
 	}
 
-	if ( ! $exists ) {
-		$items[] = $cs_item;
+	$user_url = '';
+	if ( class_exists( 'STM_LMS_User' ) && method_exists( 'STM_LMS_User', 'login_page_url' ) ) {
+		$user_url = STM_LMS_User::login_page_url();
+	} elseif ( function_exists( 'stm_lms_get_account_url' ) ) {
+		$user_url = stm_lms_get_account_url();
+	} else {
+		$user_url = home_url( '/user-account/' );
 	}
+
+	$items[] = array(
+		'id'           => 'codespace_custom',
+		'slug'         => 'codespace',
+		'menu_title'   => 'Mi Escritorio Linux',
+		'title'        => 'Mi Escritorio Linux',
+		'menu_icon'    => 'fa-laptop-code',
+		'icon'         => 'fa-laptop-code',
+		'menu_url'     => trailingslashit( $user_url ) . 'codespace/',
+		'menu_place'   => 'learning',
+		'section'      => 'codespace',
+		'order'        => 10,
+		'user_profile' => true,
+	);
 
 	return $items;
 }
 
-// 1.3. Override Template File for Codespace Tab
-add_filter( 'stm_lms_template_file', 'playcode_cs_override_template_file', 999, 2 );
+// 1.4. Override Template File for Codespace Tab
+add_filter( 'stm_lms_template_file', 'playcode_cs_override_template_file', 9999, 2 );
 function playcode_cs_override_template_file( $path, $template_name ) {
 	if ( false !== strpos( $template_name, 'codespace-custom' ) ) {
 		return PLAYCODE_CODESPACES_PATH . 'templates_override';
@@ -74,24 +92,27 @@ function playcode_cs_override_template_file( $path, $template_name ) {
 	return $path;
 }
 
-// 1.4. Custom SVG Icon Styling for fa-laptop-code in MasterStudy Sidebar
-add_action( 'wp_head', 'playcode_cs_icon_styles', 99 );
+// 1.5. Custom SVG Icon Styling for fa-laptop-code in MasterStudy Sidebar
+add_action( 'wp_head', 'playcode_cs_icon_styles', 999 );
 function playcode_cs_icon_styles() {
 	?>
 	<style type="text/css">
 		.masterstudy-account-menu__list a.masterstudy-account-menu__list-item i.fa-laptop-code {
 			font-size: 0 !important;
-			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23001F4A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='12' x='3' y='4' rx='2'/%3E%3Cline x1='2' x2='22' y1='20' y2='20'/%3E%3Cpolyline points='8 9 10 11 8 13'/%3E%3Cline x1='12' x2='15' y1='13' y2='13'/%3E%3C/svg%3E") !important;
-			background-size: contain !important;
-			background-repeat: no-repeat !important;
-			background-position: center !important;
 			width: 18px !important;
 			height: 18px !important;
 			display: inline-block !important;
+			background-size: contain !important;
+			background-repeat: no-repeat !important;
+			background-position: center !important;
+			vertical-align: middle !important;
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23001F4A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='12' x='3' y='4' rx='2'/%3E%3Cline x1='2' x2='22' y1='20' y2='20'/%3E%3Cpolyline points='8 9 10 11 8 13'/%3E%3Cline x1='12' x2='15' y1='13' y2='13'/%3E%3C/svg%3E") !important;
 		}
-		.masterstudy-account-menu__list a.masterstudy-account-menu__list-item:hover i.fa-laptop-code,
-		.masterstudy-account-menu__list a.masterstudy-account-menu__list-item_active i.fa-laptop-code {
-			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='12' x='3' y='4' rx='2'/%3E%3Cline x1='2' x2='22' y1='20' y2='20'/%3E%3Cpolyline points='8 9 10 11 8 13'/%3E%3Cline x1='12' x2='15' y1='13' y2='13'/%3E%3C/svg%3E") !important;
+		.masterstudy-account-menu__list a.masterstudy-account-menu__list-item:hover i.fa-laptop-code {
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='12' x='3' y='4' rx='2'/%3E%3Cline x1='2' x2='22' y1='20' y2='20'/%3E%3Cpolyline points='8 9 10 11 8 13'/%3E%3Cline x1='12' x2='15' y1='13' y2='13'/%3E%3C/svg%3E") !important;
+		}
+		.masterstudy-account-menu__list a.masterstudy-account-menu__list-item.masterstudy-account-menu__list-item_active i.fa-laptop-code {
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='12' x='3' y='4' rx='2'/%3E%3Cline x1='2' x2='22' y1='20' y2='20'/%3E%3Cpolyline points='8 9 10 11 8 13'/%3E%3Cline x1='12' x2='15' y1='13' y2='13'/%3E%3C/svg%3E") !important;
 		}
 	</style>
 	<?php
