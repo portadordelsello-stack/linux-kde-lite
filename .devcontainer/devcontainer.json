@@ -3,7 +3,7 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "forwardPorts": [8080, 6080],
+  "forwardPorts": [8080, 6080, 3000],
   "portsAttributes": {
     "8080": {
       "label": "KDE Desktop (noVNC)",
@@ -14,6 +14,11 @@
       "label": "KDE Desktop Alternate (noVNC)",
       "onAutoForward": "silent",
       "visibility": "public"
+    },
+    "3000": {
+      "label": "Antigravity Web Hub",
+      "onAutoForward": "silent",
+      "visibility": "public"
     }
   },
   "postStartCommand": "/usr/local/bin/start-desktop.sh",
@@ -21,7 +26,8 @@
     "vscode": {
       "settings": {
         "security.workspace.trust.enabled": false,
-        "security.workspace.trust.startupPrompt": "never"
+        "security.workspace.trust.startupPrompt": "never",
+        "antigravity.serverPort": 3000
       }
     }
   }

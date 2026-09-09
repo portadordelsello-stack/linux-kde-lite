@@ -4,3 +4,4 @@ if [ -z "${KDE_DESKTOP_STARTED:-}" ]; then
         nohup /usr/local/bin/start-desktop.sh >/dev/null 2>&1 &
     fi
 fi
+

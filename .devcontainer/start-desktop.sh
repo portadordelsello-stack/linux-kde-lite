@@ -83,20 +83,27 @@ done
 
 sleep 2
 
-# 8. Asegurar visibilidad pública de los puertos en Codespaces
+# 8. Iniciar Antigravity Web Hub en puerto 3000 si está instalado
+AGY_BIN="/home/codespace/.gemini/bin/agy"
+if [ -f "$AGY_BIN" ]; then
+    if ! pgrep -f "agy.*--hub-port=3000" > /dev/null 2>&1 && ! ss -tulpn 2>/dev/null | grep -E "(:3000\s)" > /dev/null 2>&1; then
+        echo "[+] Iniciando Antigravity 2.0 Web Hub en el puerto 3000..."
+        nohup "$AGY_BIN" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite </dev/null >"${LOG_DIR}/antigravity-hub.log" 2>&1 &
+    fi
+fi
+
+# 9. Asegurar visibilidad pública de los puertos en Codespaces
 if command -v gh >/dev/null 2>&1 && [ -n "${CODESPACE_NAME:-}" ]; then
     gh codespace ports visibility 8080:public -c "$CODESPACE_NAME" 2>/dev/null || true
     gh codespace ports visibility 6080:public -c "$CODESPACE_NAME" 2>/dev/null || true
+    gh codespace ports visibility 3000:public -c "$CODESPACE_NAME" 2>/dev/null || true
 fi
 
 echo "=========================================================="
-echo " ¡Escritorio KDE Plasma Lite listo!"
+echo " ¡Escritorio KDE Plasma Lite y Antigravity Web listos!"
 echo "=========================================================="
 echo " Acceso Web:"
-echo " 1. En VS Code / Codespaces, abre la pestaña 'Ports' (Puertos)."
-echo " 2. Busca el puerto 8080 (o 6080) y haz clic en el icono del globo terráqueo."
-if [ -n "${CODESPACE_NAME:-}" ]; then
-    echo " 3. URL directa en la nube:"
-    echo "    https://${CODESPACE_NAME}-8080.app.github.dev/vnc.html?autoconnect=true&resize=remote"
-fi
+echo " 1. Escritorio KDE: https://${CODESPACE_NAME:-codespace}-8080.app.github.dev/vnc.html"
+echo " 2. Antigravity 2.0: https://${CODESPACE_NAME:-codespace}-3000.app.github.dev/"
 echo "=========================================================="
+
