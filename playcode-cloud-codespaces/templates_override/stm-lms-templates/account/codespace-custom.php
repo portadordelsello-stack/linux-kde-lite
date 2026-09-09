@@ -26,7 +26,7 @@ wp_enqueue_style( 'masterstudy-account-menu' );
 		if ( function_exists( 'playcode_codespaces_render_dashboard' ) ) {
 			echo playcode_codespaces_render_dashboard();
 		} else {
-			echo '<div style="background:#FFF; border:2px solid #001F4A; padding:20px; font-weight:800; color:#001F4A;">Escritorio Linux Codespaces</div>';
+			echo '<div style="background:#FFF; border:2px solid #001F4A; padding:20px; font-weight:800; color:#001F4A;">Máquina Virtual Linux</div>';
 		}
 		?>
 	</div>

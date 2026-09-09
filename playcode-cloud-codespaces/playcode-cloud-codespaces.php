@@ -63,8 +63,8 @@ function playcode_cs_section_labels( $labels ) {
 	if ( ! is_array( $labels ) ) {
 		$labels = array();
 	}
-	$labels['codespace'] = 'Laboratorio Linux';
-	$labels['build']     = 'Desarrollo e IA';
+	$labels['codespace'] = 'Laboratorio';
+	unset( $labels['build'] );
 	return $labels;
 }
 
@@ -78,20 +78,34 @@ function playcode_cs_add_menu_items( $items ) {
 
 	$user_url = playcode_cs_get_account_base_url();
 
-	// 1. Linux Desktop item
 	$has_codespace = false;
-	foreach ( $items as $item ) {
+	$has_build     = false;
+
+	foreach ( $items as &$item ) {
 		if ( isset( $item['slug'] ) && 'codespace' === $item['slug'] ) {
-			$has_codespace = true;
-			break;
+			$item['menu_title'] = 'Máquina Virtual Linux';
+			$item['title']      = 'Máquina Virtual Linux';
+			$item['section']    = 'codespace';
+			$item['order']      = 10;
+			$has_codespace      = true;
+		}
+		if ( isset( $item['slug'] ) && 'build' === $item['slug'] ) {
+			$item['menu_title'] = 'Build (Antigravity AI)';
+			$item['title']      = 'Build (Antigravity AI)';
+			$item['section']    = 'codespace';
+			$item['order']      = 15;
+			$has_build          = true;
 		}
 	}
+	unset( $item );
+
+	// 1. Máquina Virtual Linux item
 	if ( ! $has_codespace ) {
 		$items[] = array(
 			'id'           => 'codespace_custom',
 			'slug'         => 'codespace',
-			'menu_title'   => 'Mi Escritorio Linux',
-			'title'        => 'Mi Escritorio Linux',
+			'menu_title'   => 'Máquina Virtual Linux',
+			'title'        => 'Máquina Virtual Linux',
 			'menu_icon'    => 'fa-laptop-code',
 			'icon'         => 'fa-laptop-code',
 			'badge'        => '',
@@ -103,14 +117,7 @@ function playcode_cs_add_menu_items( $items ) {
 		);
 	}
 
-	// 2. Build / Antigravity AI item
-	$has_build = false;
-	foreach ( $items as $item ) {
-		if ( isset( $item['slug'] ) && 'build' === $item['slug'] ) {
-			$has_build = true;
-			break;
-		}
-	}
+	// 2. Build / Antigravity AI item (placed right below in the same 'Laboratorio' section)
 	if ( ! $has_build ) {
 		$items[] = array(
 			'id'           => 'build_custom',
@@ -122,7 +129,7 @@ function playcode_cs_add_menu_items( $items ) {
 			'badge'        => 'AI',
 			'menu_url'     => $user_url . 'build/',
 			'menu_place'   => 'learning',
-			'section'      => 'build',
+			'section'      => 'codespace',
 			'order'        => 15,
 			'user_profile' => true,
 		);
@@ -558,7 +565,7 @@ function playcode_codespaces_render_dashboard() {
 		<div class="playcode-cs-card">
 			<div class="playcode-cs-header">
 				<h2 class="playcode-cs-title">
-					🖥️ Mi Escritorio Linux en la Nube
+					🖥️ Máquina Virtual Linux en la Nube
 				</h2>
 				<span id="playcode-cs-state-badge" class="playcode-cs-badge <?php echo $is_connected ? 'badge-blue' : 'badge-gray'; ?>">
 					<?php echo $is_connected ? '<span class="playcode-cs-dot dot-gray"></span> Verificando...' : 'Desconectado'; ?>
@@ -634,13 +641,13 @@ function playcode_codespaces_render_dashboard() {
 
 				<!-- Case A: No Codespace Found -->
 				<div id="playcode-cs-no-codespace" style="display:none; text-align:center; padding:30px 10px;">
-					<h3 style="font-size:18px; font-weight:800; margin-bottom:10px;">Aún no tienes un entorno de escritorio creado</h3>
+					<h3 style="font-size:18px; font-weight:800; margin-bottom:10px;">Aún no tienes una máquina virtual creada</h3>
 					<p style="font-size:14px; color:#64748B; max-width:550px; margin:0 auto 20px auto;">
 						Crea tu propia máquina virtual Linux con KDE Plasma en GitHub Codespaces vinculada a este curso:
 					</p>
 					<div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
 						<button type="button" id="playcode-cs-btn-create" class="playcode-btn playcode-btn-primary" style="font-size:15px;">
-							🚀 Crear mi Escritorio Linux (1 Clic)
+							🚀 Crear mi Máquina Virtual Linux (1 Clic)
 						</button>
 						<a href="<?php echo esc_url( $create_url ); ?>" target="_blank" class="playcode-btn playcode-btn-outline" style="font-size:15px;">
 							↗️ Abrir en GitHub
@@ -670,12 +677,12 @@ function playcode_codespaces_render_dashboard() {
 					<div class="playcode-cs-actions">
 						<!-- Start Button -->
 						<button type="button" id="playcode-cs-btn-start" class="playcode-btn playcode-btn-primary" style="display:none;">
-							⚡ Encender mi Escritorio
+							⚡ Encender Máquina Virtual
 						</button>
 
 						<!-- Open Linux Desktop Button (Available) -->
 						<a href="#" id="playcode-cs-btn-open-desktop" target="_blank" class="playcode-btn playcode-btn-success" style="display:none;">
-							🌐 Abrir Escritorio Linux (KDE)
+							🌐 Abrir Máquina Virtual Linux (KDE)
 						</a>
 
 						<!-- Open VS Code Web -->
@@ -685,7 +692,7 @@ function playcode_codespaces_render_dashboard() {
 
 						<!-- Stop Button (To conserve hours) -->
 						<button type="button" id="playcode-cs-btn-stop" class="playcode-btn playcode-btn-outline" style="display:none;">
-							🛑 Apagar Escritorio
+							🛑 Apagar Máquina Virtual
 						</button>
 					</div>
 
@@ -852,7 +859,7 @@ function playcode_codespaces_render_build_dashboard() {
 
 						<!-- Link to Linux Desktop tab -->
 						<a href="<?php echo esc_url( $codespace_url ); ?>" class="playcode-btn playcode-btn-outline">
-							🖥️ Ir a Mi Escritorio Linux
+							🖥️ Ir a Máquina Virtual Linux
 						</a>
 
 						<!-- Stop Button -->

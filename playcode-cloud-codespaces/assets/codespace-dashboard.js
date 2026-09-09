@@ -99,7 +99,7 @@
 			showLoadingState(
 				viewType === 'build'
 					? 'Consultando entorno de Build...'
-					: 'Consultando estado del escritorio en GitHub...'
+					: 'Consultando estado de la máquina virtual en GitHub...'
 			);
 			postAjax('playcode_cs_get_status', {}, function(err, response) {
 				if (err || !response || !response.success) {
@@ -228,7 +228,7 @@
 					transientAlert.style.display = 'block';
 					transientAlert.innerHTML = viewType === 'build'
 						? '<strong>⏳ Tu entorno de Build se está iniciando...</strong> Esto toma entre 10 y 20 segundos. Antigravity cargará automáticamente cuando esté listo.'
-						: '<strong>⏳ Tu escritorio se está levantando...</strong> Esto toma entre 10 y 20 segundos. Esta pantalla se actualizará automáticamente.';
+						: '<strong>⏳ Tu máquina virtual se está levantando...</strong> Esto toma entre 10 y 20 segundos. Esta pantalla se actualizará automáticamente.';
 				}
 				const btnOpenDesktop = $('btn-open-desktop');
 				if (btnOpenDesktop) btnOpenDesktop.style.display = 'none';

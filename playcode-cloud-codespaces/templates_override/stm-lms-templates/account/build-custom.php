@@ -34,3 +34,4 @@ wp_enqueue_style( 'masterstudy-account-menu' );
 
 <?php
 do_action( 'masterstudy_after_account', $lms_current_user );
+
