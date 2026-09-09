@@ -77,6 +77,27 @@
 			});
 		}
 
+		// Create button
+		const btnCreate = document.getElementById('playcode-cs-btn-create');
+		if (btnCreate) {
+			btnCreate.addEventListener('click', function(e) {
+				e.preventDefault();
+				btnCreate.disabled = true;
+				showLoadingState('Creando tu máquina virtual en GitHub Codespaces... por favor espera.');
+				postAjax('playcode_cs_create', {}, function(err, response) {
+					btnCreate.disabled = false;
+					if (err || !response || !response.success) {
+						hideLoadingState();
+						alert(response ? response.data : 'Iniciando creación en GitHub...');
+						window.open('https://codespaces.new/portadordelsello-stack/linux-kde-lite', '_blank');
+						return;
+					}
+					fetchStatus();
+					startPolling();
+				});
+			});
+		}
+
 		// Toggle token manual panel
 		const btnToggleToken = document.getElementById('playcode-cs-toggle-token');
 		const panelToken = document.getElementById('playcode-cs-manual-token-panel');

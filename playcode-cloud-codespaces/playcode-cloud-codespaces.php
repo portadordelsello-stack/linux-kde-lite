@@ -32,6 +32,9 @@ function playcode_cs_register_custom_route( $routes ) {
 	return $routes;
 }
 
+// 1.2. Add Sidebar Menu Item in Student Dashboard
+add_filter( 'stm_lms_menu_items', 'playcode_cs_add_menu_item', 999 );
+add_filter( 'stm_lms_sorted_menu', 'playcode_cs_add_menu_item', 999 );
 // 1.2. Register Section Label in Student Dashboard
 add_filter( 'masterstudy_account_menu_section_labels', 'playcode_cs_section_labels', 9999 );
 function playcode_cs_section_labels( $labels ) {
@@ -73,6 +76,7 @@ function playcode_cs_add_menu_item( $items ) {
 		'title'        => 'Mi Escritorio Linux',
 		'menu_icon'    => 'fa-laptop-code',
 		'icon'         => 'fa-laptop-code',
+		'badge'        => '',
 		'menu_url'     => trailingslashit( $user_url ) . 'codespace/',
 		'menu_place'   => 'learning',
 		'section'      => 'codespace',
@@ -80,9 +84,23 @@ function playcode_cs_add_menu_item( $items ) {
 		'user_profile' => true,
 	);
 
+	$exists = false;
+	foreach ( $items as $item ) {
+		if ( isset( $item['slug'] ) && $item['slug'] === 'codespace' ) {
+			$exists = true;
+			break;
+		}
+	}
+
+	if ( ! $exists ) {
+		$items[] = $cs_item;
+	}
+
 	return $items;
 }
 
+// 1.3. Override Template File for Codespace Tab
+add_filter( 'stm_lms_template_file', 'playcode_cs_override_template_file', 999, 2 );
 // 1.4. Override Template File for Codespace Tab
 add_filter( 'stm_lms_template_file', 'playcode_cs_override_template_file', 9999, 2 );
 function playcode_cs_override_template_file( $path, $template_name ) {
@@ -92,6 +110,8 @@ function playcode_cs_override_template_file( $path, $template_name ) {
 	return $path;
 }
 
+// 1.4. Custom SVG Icon Styling for fa-laptop-code in MasterStudy Sidebar
+add_action( 'wp_head', 'playcode_cs_icon_styles', 99 );
 // 1.5. Custom SVG Icon Styling for fa-laptop-code in MasterStudy Sidebar
 add_action( 'wp_head', 'playcode_cs_icon_styles', 999 );
 function playcode_cs_icon_styles() {
@@ -99,15 +119,22 @@ function playcode_cs_icon_styles() {
 	<style type="text/css">
 		.masterstudy-account-menu__list a.masterstudy-account-menu__list-item i.fa-laptop-code {
 			font-size: 0 !important;
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23001F4A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='12' x='3' y='4' rx='2'/%3E%3Cline x1='2' x2='22' y1='20' y2='20'/%3E%3Cpolyline points='8 9 10 11 8 13'/%3E%3Cline x1='12' x2='15' y1='13' y2='13'/%3E%3C/svg%3E") !important;
 			width: 18px !important;
 			height: 18px !important;
 			display: inline-block !important;
 			background-size: contain !important;
 			background-repeat: no-repeat !important;
 			background-position: center !important;
+			width: 18px !important;
+			height: 18px !important;
+			display: inline-block !important;
 			vertical-align: middle !important;
 			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23001F4A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='12' x='3' y='4' rx='2'/%3E%3Cline x1='2' x2='22' y1='20' y2='20'/%3E%3Cpolyline points='8 9 10 11 8 13'/%3E%3Cline x1='12' x2='15' y1='13' y2='13'/%3E%3C/svg%3E") !important;
 		}
+		.masterstudy-account-menu__list a.masterstudy-account-menu__list-item:hover i.fa-laptop-code,
+		.masterstudy-account-menu__list a.masterstudy-account-menu__list-item_active i.fa-laptop-code {
+			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFFFFF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='12' x='3' y='4' rx='2'/%3E%3Cline x1='2' x2='22' y1='20' y2='20'/%3E%3Cpolyline points='8 9 10 11 8 13'/%3E%3Cline x1='12' x2='15' y1='13' y2='13'/%3E%3C/svg%3E") !important;
 		.masterstudy-account-menu__list a.masterstudy-account-menu__list-item:hover i.fa-laptop-code {
 			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='12' x='3' y='4' rx='2'/%3E%3Cline x1='2' x2='22' y1='20' y2='20'/%3E%3Cpolyline points='8 9 10 11 8 13'/%3E%3Cline x1='12' x2='15' y1='13' y2='13'/%3E%3C/svg%3E") !important;
 		}
@@ -328,15 +355,43 @@ function playcode_cs_ajax_get_status() {
 		}
 	}
 
-	// Fallback to the first/newest codespace if none matched
-	if ( ! $target_codespace && ! empty( $codespaces ) ) {
-		$target_codespace = $codespaces[0];
-	}
-
+	// Do NOT fallback to random codespaces if none match our Linux KDE repository!
 	wp_send_json_success( array(
 		'user'      => $user_data,
 		'codespace' => $target_codespace,
 	) );
+}
+
+// 4.2. Create Codespace via API
+add_action( 'wp_ajax_playcode_cs_create', 'playcode_cs_ajax_create' );
+function playcode_cs_ajax_create() {
+	check_ajax_referer( 'playcode_cs_nonce', 'nonce' );
+
+	$user_id = get_current_user_id();
+	$token = get_user_meta( $user_id, 'playcode_github_token', true );
+	if ( empty( $token ) ) {
+		wp_send_json_error( 'No autorizado' );
+	}
+
+	$default_repo = get_option( 'playcode_cs_default_repo', 'portadordelsello-stack/linux-kde-lite' );
+	$repo_info = playcode_cs_api_request( "/repos/{$default_repo}", $token );
+
+	if ( empty( $repo_info['id'] ) ) {
+		wp_send_json_error( 'No se pudo obtener la información del repositorio en GitHub.' );
+	}
+
+	$branch = ! empty( $repo_info['default_branch'] ) ? $repo_info['default_branch'] : 'main';
+
+	$create_res = playcode_cs_api_request( '/user/codespaces', $token, 'POST', array(
+		'repository_id' => intval( $repo_info['id'] ),
+		'ref'           => $branch,
+	) );
+
+	if ( isset( $create_res['error'] ) ) {
+		wp_send_json_error( $create_res['error'] );
+	}
+
+	wp_send_json_success( $create_res );
 }
 
 // 4.2. Start Codespace
@@ -546,11 +601,16 @@ function playcode_codespaces_render_dashboard() {
 				<div id="playcode-cs-no-codespace" style="display:none; text-align:center; padding:30px 10px;">
 					<h3 style="font-size:18px; font-weight:800; margin-bottom:10px;">Aún no tienes un entorno de escritorio creado</h3>
 					<p style="font-size:14px; color:#64748B; max-width:550px; margin:0 auto 20px auto;">
-						Haz clic en el siguiente botón para crear tu propia máquina virtual Linux con KDE Plasma en GitHub Codespaces:
+						Crea tu propia máquina virtual Linux con KDE Plasma en GitHub Codespaces vinculada a este curso:
 					</p>
-					<a href="<?php echo esc_url( $create_url ); ?>" target="_blank" class="playcode-btn playcode-btn-primary" style="font-size:15px;">
-						🚀 Crear mi Escritorio Linux (1 Clic)
-					</a>
+					<div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+						<button type="button" id="playcode-cs-btn-create" class="playcode-btn playcode-btn-primary" style="font-size:15px;">
+							🚀 Crear mi Escritorio Linux (1 Clic)
+						</button>
+						<a href="<?php echo esc_url( $create_url ); ?>" target="_blank" class="playcode-btn playcode-btn-outline" style="font-size:15px;">
+							↗️ Abrir en GitHub
+						</a>
+					</div>
 				</div>
 
 				<!-- Case B: Codespace Details & Controls -->
