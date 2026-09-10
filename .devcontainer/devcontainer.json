@@ -22,6 +22,7 @@
     }
   },
   "postStartCommand": "/usr/local/bin/start-desktop.sh",
+  "postAttachCommand": "/usr/local/bin/start-desktop.sh",
   "customizations": {
     "vscode": {
       "settings": {

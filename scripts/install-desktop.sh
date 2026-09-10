@@ -167,14 +167,19 @@ unset DBUS_SESSION_BUS_ADDRESS
 export XDG_SESSION_TYPE=x11
 export XDG_CURRENT_DESKTOP=KDE
 export DESKTOP_SESSION=plasma
+export KDE_FULL_SESSION=true
 export QT_QPA_PLATFORM=xcb
+
+export XDG_RUNTIME_DIR="/tmp/runtime-${USER:-codespace}"
+mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null || true
+chmod 0700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
 
 # Desactivar efectos 3D de composición para máxima fluidez y menor consumo en VNC
 if command -v kwriteconfig5 >/dev/null 2>&1; then
-    kwriteconfig5 --file kwinrc --group Compositing --key Enabled false
-    kwriteconfig5 --file kscreenlockerrc --group Daemon --key Autolock false
-    kwriteconfig5 --file kscreenlockerrc --group Daemon --key LockOnResume false
-    kwriteconfig5 --file kscreenlockerrc --group Daemon --key Timeout 0
+    kwriteconfig5 --file kwinrc --group Compositing --key Enabled false 2>/dev/null || true
+    kwriteconfig5 --file kscreenlockerrc --group Daemon --key Autolock false 2>/dev/null || true
+    kwriteconfig5 --file kscreenlockerrc --group Daemon --key LockOnResume false 2>/dev/null || true
+    kwriteconfig5 --file kscreenlockerrc --group Daemon --key Timeout 0 2>/dev/null || true
 fi
 
 xset s off 2>/dev/null || true
@@ -191,15 +196,15 @@ if command -v autocutsel >/dev/null 2>&1; then
     autocutsel -selection CLIPBOARD -fork
 fi
 
-# Iniciar bus de sesión D-Bus
-if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
-    eval $(dbus-launch --sh-syntax --exit-with-session)
+# Ejecutar KDE Plasma bajo bus de sesión D-Bus
+if command -v dbus-run-session >/dev/null 2>&1; then
+    exec dbus-run-session -- startplasma-x11
+else
+    if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+        eval $(dbus-launch --sh-syntax --exit-with-session)
+    fi
+    exec startplasma-x11
 fi
-
-# Iniciar gestor de ventanas KWin (para barras de título y movimiento de ventanas)
-kwin_x11 --replace &
-
-exec startplasma-x11
 EOF
 
 chmod +x "$HOME/.vnc/xstartup"

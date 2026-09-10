@@ -2,6 +2,7 @@
 set -euo pipefail
 
 DISPLAY_NUM=":1"
+DISP_INDEX="1"
 VNC_PORT="5901"
 WEB_PORT="6080"
 LOG_DIR="$HOME/.vnc"
@@ -29,51 +30,71 @@ fi
 # 2. Memoria compartida para Chrome y Electron
 sudo mount -o remount,size=2G /dev/shm 2>/dev/null || true
 
-# 3. Desactivar bloqueo de pantalla de KDE
+# 3. Iniciar servicio D-Bus del sistema si no está corriendo
+if ! sudo service dbus status >/dev/null 2>&1; then
+    echo "[+] Iniciando servicio D-Bus del sistema..."
+    sudo service dbus start >/dev/null 2>&1 || true
+fi
+
+# 4. Desactivar bloqueo de pantalla de KDE
 if command -v kwriteconfig5 >/dev/null 2>&1; then
     kwriteconfig5 --file kscreenlockerrc --group Daemon --key Autolock false 2>/dev/null || true
     kwriteconfig5 --file kscreenlockerrc --group Daemon --key LockOnResume false 2>/dev/null || true
     kwriteconfig5 --file kscreenlockerrc --group Daemon --key Timeout 0 2>/dev/null || true
 fi
 
-# 4. Limpieza de bloqueos huérfanos de X11 si no hay proceso corriendo
-if [ -f "/tmp/.X11-unix/X1" ] || [ -f "/tmp/.X1-lock" ]; then
-    if ! pgrep -f "Xvnc :1" > /dev/null 2>&1 && ! pgrep -f "Xtigervnc :1" > /dev/null 2>&1; then
-        echo "Limpiando archivos de bloqueo antiguos..."
-        rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || sudo rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null || true
-    fi
-fi
+# 5. Asegurar permisos de directorio socket X11 y runtime dir
+export XDG_RUNTIME_DIR="/tmp/runtime-${USER:-codespace}"
+mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null || true
+chmod 0700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
+sudo mkdir -p /tmp/.X11-unix
+sudo chown root:root /tmp/.X11-unix 2>/dev/null || true
+sudo chmod 1777 /tmp/.X11-unix 2>/dev/null || true
 
-# 5. Iniciar TigerVNC en pantalla :1
-if pgrep -f "Xvnc :1" > /dev/null 2>&1 || pgrep -f "Xtigervnc :1" > /dev/null 2>&1; then
+# 6. Comprobar si VNC está activo; si no, limpiar residuos y arrancar
+if ss -tlpn 2>/dev/null | grep -E "(:${VNC_PORT}\s)" >/dev/null 2>&1 || pgrep -x Xtigervnc >/dev/null 2>&1 || pgrep -x Xvnc >/dev/null 2>&1; then
     echo "[!] El servidor VNC ya está activo en la pantalla ${DISPLAY_NUM} (puerto ${VNC_PORT})."
 else
+    echo "[+] Limpiando bloqueos, sockets y PIDs antiguos de X11..."
+    rm -f "/tmp/.X${DISP_INDEX}-lock" "/tmp/.X11-unix/X${DISP_INDEX}" "${LOG_DIR}"/*"${DISPLAY_NUM}.pid" 2>/dev/null || true
+    sudo rm -f "/tmp/.X${DISP_INDEX}-lock" "/tmp/.X11-unix/X${DISP_INDEX}" 2>/dev/null || true
+
     echo "[+] Iniciando servidor TigerVNC en ${DISPLAY_NUM}..."
-    vncserver ${DISPLAY_NUM} \
+    setsid nohup vncserver "${DISPLAY_NUM}" \
         -geometry 1366x768 \
         -depth 24 \
         -localhost yes \
         -SecurityTypes None \
-        > "${LOG_DIR}/vncserver.log" 2>&1 || {
+        -cleanstale \
+        -noreset \
+        </dev/null >> "${LOG_DIR}/vncserver.log" 2>&1 || {
             echo "[-] Falló el inicio de vncserver. Ver log en: ${LOG_DIR}/vncserver.log"
             exit 1
         }
     echo "[+] Servidor VNC iniciado correctamente."
 fi
 
-# 6. Sincronización de portapapeles bidireccional
+# Esperar a que el puerto VNC responda
+for i in {1..10}; do
+    if ss -tlpn 2>/dev/null | grep -E "(:${VNC_PORT}\s)" >/dev/null 2>&1; then
+        break
+    fi
+    sleep 0.5
+done
+
+# 7. Sincronización de portapapeles bidireccional
 export DISPLAY="${DISPLAY_NUM}"
-if command -v vncconfig >/dev/null 2>&1 && ! pgrep -f "vncconfig -nowin" >/dev/null 2>&1; then
+if command -v vncconfig >/dev/null 2>&1 && ! pgrep -x vncconfig >/dev/null 2>&1; then
     nohup vncconfig -nowin </dev/null >/dev/null 2>&1 &
 fi
 if command -v autocutsel >/dev/null 2>&1; then
-    pgrep -f "autocutsel -fork" >/dev/null 2>&1 || autocutsel -fork
-    pgrep -f "autocutsel -selection CLIPBOARD -fork" >/dev/null 2>&1 || autocutsel -selection CLIPBOARD -fork
+    pgrep -x autocutsel >/dev/null 2>&1 || autocutsel -fork
+    pgrep -x autocutsel >/dev/null 2>&1 || autocutsel -selection CLIPBOARD -fork
 fi
 
-# 7. Iniciar websockify / noVNC en puertos 8080 y 6080
+# 8. Iniciar websockify / noVNC en puertos 8080 y 6080
 for PORT in 8080 6080; do
-    if pgrep -f "websockify.*${PORT}" > /dev/null 2>&1; then
+    if ss -tlpn 2>/dev/null | grep -E "(:${PORT}\s)" >/dev/null 2>&1; then
         echo "[!] websockify ya está corriendo en el puerto ${PORT}."
     else
         echo "[+] Iniciando puente web noVNC en el puerto ${PORT}..."
@@ -83,19 +104,19 @@ done
 
 sleep 2
 
-# 8. Iniciar Antigravity Web Hub en puerto 3000 si está instalado
+# 9. Iniciar Antigravity Web Hub en puerto 3000 si está instalado
 AGY_BIN="/home/codespace/.gemini/bin/agy"
 if [ ! -f "$AGY_BIN" ] && command -v agy >/dev/null 2>&1; then
     AGY_BIN="$(command -v agy)"
 fi
 if [ -f "$AGY_BIN" ] || command -v "$AGY_BIN" >/dev/null 2>&1; then
-    if ! pgrep -f "agy.*--hub-port=3000" > /dev/null 2>&1 && ! ss -tulpn 2>/dev/null | grep -E "(:3000\s)" > /dev/null 2>&1; then
+    if ! ss -tlpn 2>/dev/null | grep -E "(:3000\s)" >/dev/null 2>&1; then
         echo "[+] Iniciando Antigravity 2.0 Web Hub en el puerto 3000..."
         nohup "$AGY_BIN" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite </dev/null >"${LOG_DIR}/antigravity-hub.log" 2>&1 &
     fi
 fi
 
-# 9. Asegurar visibilidad pública de los puertos en Codespaces
+# 10. Asegurar visibilidad pública de los puertos en Codespaces
 if command -v gh >/dev/null 2>&1 && [ -n "${CODESPACE_NAME:-}" ]; then
     gh codespace ports visibility 8080:public -c "$CODESPACE_NAME" 2>/dev/null || true
     gh codespace ports visibility 6080:public -c "$CODESPACE_NAME" 2>/dev/null || true
@@ -109,4 +130,3 @@ echo " Acceso Web:"
 echo " 1. Escritorio KDE: https://${CODESPACE_NAME:-codespace}-8080.app.github.dev/vnc.html"
 echo " 2. Antigravity 2.0: https://${CODESPACE_NAME:-codespace}-3000.app.github.dev/"
 echo "=========================================================="
-
