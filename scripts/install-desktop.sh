@@ -120,8 +120,22 @@ EOF
 chmod +x /usr/local/bin/antigravity-ide'
 
 sudo ln -sf /usr/local/bin/antigravity-ide /usr/local/bin/antigravity
-if [ -f "/home/codespace/.gemini/bin/agy" ]; then
-    sudo ln -sf /home/codespace/.gemini/bin/agy /usr/local/bin/agy
+
+# Descargar e instalar Google Antigravity CLI (agy)
+if ! command -v agy >/dev/null 2>&1 && [ ! -f "/usr/local/bin/agy" ]; then
+    echo "[+] Instalando Google Antigravity CLI (agy)..."
+    TMP_DIR=$(mktemp -d)
+    if curl -sL "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.0-5210873191596032/linux-x64/cli_linux_x64.tar.gz" | tar -xz -C "$TMP_DIR" 2>/dev/null; then
+        sudo mv "$TMP_DIR/antigravity" /usr/local/bin/agy
+        sudo chmod +x /usr/local/bin/agy
+        mkdir -p /home/codespace/.gemini/bin 2>/dev/null || true
+        ln -sf /usr/local/bin/agy /home/codespace/.gemini/bin/agy 2>/dev/null || true
+    fi
+    rm -rf "$TMP_DIR" 2>/dev/null || true
+fi
+if [ -f "/usr/local/bin/agy" ] && [ ! -f "/home/codespace/.gemini/bin/agy" ]; then
+    mkdir -p /home/codespace/.gemini/bin 2>/dev/null || true
+    ln -sf /usr/local/bin/agy /home/codespace/.gemini/bin/agy 2>/dev/null || true
 fi
 
 # Configurar iconos y entradas de escritorio

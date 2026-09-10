@@ -7,7 +7,7 @@
   "portsAttributes": {
     "8080": {
       "label": "KDE Desktop (noVNC)",
-      "onAutoForward": "openBrowser",
+      "onAutoForward": "silent",
       "visibility": "public"
     },
     "6080": {
@@ -22,9 +22,11 @@
     }
   },
   "postStartCommand": "/usr/local/bin/start-desktop.sh",
-  "postAttachCommand": "/usr/local/bin/start-desktop.sh",
   "customizations": {
     "vscode": {
+      "extensions": [
+        "google.google-antigravity"
+      ],
       "settings": {
         "security.workspace.trust.enabled": false,
         "security.workspace.trust.startupPrompt": "never",

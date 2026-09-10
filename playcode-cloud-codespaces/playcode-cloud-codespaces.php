@@ -722,7 +722,7 @@ function playcode_codespaces_render_dashboard() {
 					<div class="playcode-cs-notice">
 						<span>💡</span>
 						<div>
-							<strong>Tip para tus clases:</strong> Tu cuenta de GitHub incluye 120 horas core gratis por mes. Recuerda presionar <strong>"Apagar Escritorio"</strong> cuando concluyas tu sesión para ahorrar tus horas disponibles.
+							<strong>Tip de acceso:</strong> La primera vez que abras tu máquina en una sesión, GitHub mostrará una pantalla de seguridad con el botón verde <strong>"Continue"</strong>. Haz clic en <em>Continue</em> para ingresar a tu escritorio Linux. Recuerda presionar <strong>"Apagar Máquina Virtual"</strong> al terminar tu clase para ahorrar tus horas de GitHub.
 						</div>
 					</div>
 				</div>
@@ -924,7 +924,7 @@ function playcode_codespaces_render_build_dashboard() {
 					<div class="playcode-cs-notice">
 						<span>💡</span>
 						<div>
-							<strong>Flujo de Vibecoding:</strong> Al cargar Antigravity, conéctate con tu cuenta de Google para activar Gemini. Todo el código que generes vive en la misma máquina que tu Escritorio Linux.
+							<strong>Flujo de Vibecoding:</strong> La primera vez que cargues tu entorno en una sesión, presiona el botón verde <strong>"Continue"</strong> de GitHub. Luego conéctate con tu cuenta de Google para activar Gemini. Todo el código que generes vive en la misma máquina que tu Escritorio Linux.
 						</div>
 					</div>
 				</div>

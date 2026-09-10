@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# 0. Bloqueo atómico anti-concurrencia: previene múltiples ejecuciones simultáneas
+START_LOCK="/tmp/.start-desktop-mutex.lock"
+exec 200>"$START_LOCK"
+if ! flock -n 200; then
+    echo "[!] start-desktop.sh ya se encuentra en ejecución en otro proceso. Omitiendo."
+    exit 0
+fi
+
 DISPLAY_NUM=":1"
 DISP_INDEX="1"
 VNC_PORT="5901"
@@ -12,7 +20,7 @@ echo "=========================================================="
 echo " Iniciando KDE Plasma Lite Desktop"
 echo "=========================================================="
 
-# 1. Limpieza de archivo de lock si es huérfano
+# 1. Limpieza de archivo de lock de instalación si es huérfano
 LOCK_FILE="/tmp/.install-desktop.lock"
 if [ -f "$LOCK_FILE" ]; then
     PID=$(cat "$LOCK_FILE" 2>/dev/null || echo "")
@@ -102,13 +110,32 @@ for PORT in 8080 6080; do
     fi
 done
 
-sleep 2
+sleep 1
 
-# 9. Iniciar Antigravity Web Hub en puerto 3000 si está instalado
-AGY_BIN="/home/codespace/.gemini/bin/agy"
+# 9. Iniciar Antigravity Web Hub en puerto 3000
+AGY_BIN="/usr/local/bin/agy"
+if [ ! -f "$AGY_BIN" ] && [ -f "/home/codespace/.gemini/bin/agy" ]; then
+    AGY_BIN="/home/codespace/.gemini/bin/agy"
+fi
 if [ ! -f "$AGY_BIN" ] && command -v agy >/dev/null 2>&1; then
     AGY_BIN="$(command -v agy)"
 fi
+
+# Auto-descarga de fallback si agy no existe aún
+if [ ! -f "$AGY_BIN" ] && ! command -v "$AGY_BIN" >/dev/null 2>&1; then
+    echo "[+] Descargando Antigravity CLI oficial (agy)..."
+    TMP_DIR=$(mktemp -d)
+    if curl -sL "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.0-5210873191596032/linux-x64/cli_linux_x64.tar.gz" | tar -xz -C "$TMP_DIR" 2>/dev/null; then
+        sudo mv "$TMP_DIR/antigravity" /usr/local/bin/agy 2>/dev/null || mv "$TMP_DIR/antigravity" /home/codespace/.gemini/bin/agy 2>/dev/null || true
+        sudo chmod +x /usr/local/bin/agy 2>/dev/null || chmod +x /home/codespace/.gemini/bin/agy 2>/dev/null || true
+        mkdir -p /home/codespace/.gemini/bin 2>/dev/null || true
+        ln -sf /usr/local/bin/agy /home/codespace/.gemini/bin/agy 2>/dev/null || true
+        [ -f "/usr/local/bin/agy" ] && AGY_BIN="/usr/local/bin/agy"
+        [ -f "/home/codespace/.gemini/bin/agy" ] && AGY_BIN="/home/codespace/.gemini/bin/agy"
+    fi
+    rm -rf "$TMP_DIR" 2>/dev/null || true
+fi
+
 if [ -f "$AGY_BIN" ] || command -v "$AGY_BIN" >/dev/null 2>&1; then
     if ! ss -tlpn 2>/dev/null | grep -E "(:3000\s)" >/dev/null 2>&1; then
         echo "[+] Iniciando Antigravity 2.0 Web Hub en el puerto 3000..."
@@ -116,17 +143,33 @@ if [ -f "$AGY_BIN" ] || command -v "$AGY_BIN" >/dev/null 2>&1; then
     fi
 fi
 
-# 10. Asegurar visibilidad pública de los puertos en Codespaces
-if command -v gh >/dev/null 2>&1 && [ -n "${CODESPACE_NAME:-}" ]; then
-    gh codespace ports visibility 8080:public -c "$CODESPACE_NAME" 2>/dev/null || true
-    gh codespace ports visibility 6080:public -c "$CODESPACE_NAME" 2>/dev/null || true
-    gh codespace ports visibility 3000:public -c "$CODESPACE_NAME" 2>/dev/null || true
+# 10. Asegurar visibilidad pública de los puertos en Codespaces con reintentos
+ensure_port_public() {
+    local port="$1"
+    if command -v gh >/dev/null 2>&1 && [ -n "${CODESPACE_NAME:-}" ]; then
+        for attempt in {1..8}; do
+            if gh codespace ports visibility "${port}:public" -c "$CODESPACE_NAME" >/dev/null 2>&1; then
+                echo "[+] Puerto ${port} confirmado como público."
+                return 0
+            fi
+            sleep 2
+        done
+        echo "[!] Advertencia: No se pudo verificar visibilidad pública para puerto ${port}."
+    fi
+}
+
+if [ -n "${CODESPACE_NAME:-}" ]; then
+    echo "[+] Verificando visibilidad pública de puertos en GitHub Codespaces..."
+    ensure_port_public 8080
+    ensure_port_public 6080
+    ensure_port_public 3000
 fi
 
 echo "=========================================================="
 echo " ¡Escritorio KDE Plasma Lite y Antigravity Web listos!"
 echo "=========================================================="
 echo " Acceso Web:"
-echo " 1. Escritorio KDE: https://${CODESPACE_NAME:-codespace}-8080.app.github.dev/vnc.html"
-echo " 2. Antigravity 2.0: https://${CODESPACE_NAME:-codespace}-3000.app.github.dev/"
+echo " 1. Escritorio KDE (noVNC): https://${CODESPACE_NAME:-codespace}-8080.app.github.dev/vnc.html"
+echo " 2. Escritorio KDE Alt:     https://${CODESPACE_NAME:-codespace}-6080.app.github.dev/vnc.html"
+echo " 3. Antigravity 2.0 Hub:    https://${CODESPACE_NAME:-codespace}-3000.app.github.dev/"
 echo "=========================================================="

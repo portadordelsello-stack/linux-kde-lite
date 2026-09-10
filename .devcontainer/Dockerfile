@@ -67,6 +67,18 @@ RUN [ -f /opt/antigravity-ide/resources/app/resources/linux/code.png ] \
         > /usr/share/applications/antigravity-web.desktop
 
 # ---------------------------------------------------------------------------
+# 3b. Instalar Google Antigravity CLI (agy - Servidor Web Hub Puerto 3000)
+# ---------------------------------------------------------------------------
+RUN curl -sL "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.0-5210873191596032/linux-x64/cli_linux_x64.tar.gz" \
+        | tar -xz -C /tmp \
+    && mv /tmp/antigravity /usr/local/bin/agy \
+    && chmod +x /usr/local/bin/agy \
+    && mkdir -p /home/codespace/.gemini/bin \
+    && ln -sf /usr/local/bin/agy /home/codespace/.gemini/bin/agy \
+    && chown -R codespace:codespace /home/codespace/.gemini
+
+
+# ---------------------------------------------------------------------------
 # 4. Configurar noVNC: página de redirección automática
 # ---------------------------------------------------------------------------
 RUN printf '<!DOCTYPE html>\n<html lang="es">\n<head>\n    <meta charset="UTF-8">\n    <meta http-equiv="refresh" content="0; url=vnc.html?autoconnect=true&resize=remote">\n    <title>KDE Plasma Lite</title>\n</head>\n<body style="background-color: #1b1e20; color: #fff; font-family: sans-serif; text-align: center; padding-top: 50px;">\n    <h2>Iniciando KDE Plasma Desktop...</h2>\n    <p>Si no eres redirigido automáticamente, <a href="vnc.html?autoconnect=true&resize=remote" style="color: #3daee9;">haz clic aquí</a>.</p>\n</body>\n</html>\n' > /usr/share/novnc/index.html
