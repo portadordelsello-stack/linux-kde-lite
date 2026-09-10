@@ -2,30 +2,94 @@
 set -euo pipefail
 
 # =============================================================================
-# Asegurar visibilidad pública de puertos en GitHub Codespaces
+# Supervisor y Visibilidad Pública de Puertos en GitHub Codespaces
 # =============================================================================
-# Puertos esenciales definidos en el entorno:
-# - 8080: KDE Desktop noVNC
-# - 6080: KDE Desktop Alternate noVNC
-# - 3000: Antigravity 2.0 Web Hub
+# Garantiza que los servicios esenciales (VNC, noVNC, Antigravity 2.0 Web Hub)
+# y sus puertos (8080, 6080, 3000) permanezcan SIEMPRE activos y con visibilidad
+# PÚBLICA, incluso si el usuario desconecta o cierra la interfaz de VS Code.
+# =============================================================================
+
 TARGET_PORTS=(8080 6080 3000)
+DAEMON_PID_FILE="/tmp/.ensure-ports-public-daemon.pid"
+LOG_DIR="${HOME:-/home/codespace}/.vnc"
+mkdir -p "$LOG_DIR" 2>/dev/null || true
 
-LOCK_FILE="/tmp/.ensure-ports-public.lock"
-exec 201>"$LOCK_FILE"
-if ! flock -n 201; then
-    # Ya hay otra instancia verificando visibilidad de puertos
-    exit 0
-fi
+IS_DAEMON=false
+for arg in "$@"; do
+    if [ "$arg" = "--daemon" ] || [ "$arg" = "-d" ]; then
+        IS_DAEMON=true
+    fi
+done
 
-if [ -z "${CODESPACE_NAME:-}" ]; then
-    # No es un entorno GitHub Codespaces
-    exit 0
-fi
+# Función para iniciar Antigravity Web Hub desacoplado con PTY independiente
+start_antigravity_hub() {
+    local agy_bin="/usr/local/bin/agy"
+    [ ! -f "$agy_bin" ] && [ -f "/home/codespace/.gemini/bin/agy" ] && agy_bin="/home/codespace/.gemini/bin/agy"
+    [ ! -f "$agy_bin" ] && command -v agy >/dev/null 2>&1 && agy_bin="$(command -v agy)"
 
-if ! command -v gh >/dev/null 2>&1; then
-    echo "[!] GitHub CLI (gh) no está disponible en este entorno."
-    exit 0
-fi
+    if [ -x "$agy_bin" ] || command -v "$agy_bin" >/dev/null 2>&1; then
+        echo "[+] [Supervisor] Iniciando Antigravity 2.0 Web Hub en puerto 3000..."
+        export DISPLAY=":1"
+        unset BROWSER
+        if command -v script >/dev/null 2>&1; then
+            setsid script -q -c "\"$agy_bin\" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite" /dev/null </dev/null >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
+        else
+            setsid python3 -c '
+import pty, os, sys
+master, slave = pty.openpty()
+os.dup2(slave, 0)
+os.execlp(sys.argv[1], sys.argv[1], "--hub", "--hub-port=3000", "--app_data_dir=antigravity", "--add-dir=/workspaces/linux-kde-lite")
+' "$agy_bin" >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
+        fi
+    fi
+}
+
+# Función para iniciar websockify (noVNC)
+start_websockify() {
+    local port="$1"
+    echo "[+] [Supervisor] Iniciando puente web noVNC en puerto ${port}..."
+    websockify -D --web /usr/share/novnc "${port}" "localhost:5901" 2>/dev/null || true
+}
+
+# Función para iniciar TigerVNC
+start_vnc() {
+    echo "[+] [Supervisor] Iniciando servidor TigerVNC en :1 (puerto 5901)..."
+    setsid nohup vncserver :1 -geometry 1366x768 -depth 24 -localhost yes -SecurityTypes None -cleanstale -noreset </dev/null >> "${LOG_DIR}/vncserver.log" 2>&1 || true
+}
+
+# Supervisar que los procesos estén escuchando en sus puertos locales
+supervise_services() {
+    local restarted=false
+
+    # 1. TigerVNC (puerto 5901)
+    if ! ss -tlpn 2>/dev/null | grep -E "(:5901\s)" >/dev/null 2>&1; then
+        start_vnc
+        restarted=true
+    fi
+
+    # 2. websockify en puerto 8080
+    if ! ss -tlpn 2>/dev/null | grep -E "(:8080\s)" >/dev/null 2>&1; then
+        start_websockify 8080
+        restarted=true
+    fi
+
+    # 3. websockify en puerto 6080
+    if ! ss -tlpn 2>/dev/null | grep -E "(:6080\s)" >/dev/null 2>&1; then
+        start_websockify 6080
+        restarted=true
+    fi
+
+    # 4. Antigravity 2.0 Web Hub en puerto 3000
+    if ! ss -tlpn 2>/dev/null | grep -E "(:3000\s)" >/dev/null 2>&1; then
+        start_antigravity_hub
+        restarted=true
+    fi
+
+    if [ "$restarted" = true ]; then
+        sleep 2
+        check_and_update_ports >/dev/null 2>&1 || true
+    fi
+}
 
 get_private_ports() {
     local json="$1"
@@ -66,6 +130,10 @@ except Exception:
 }
 
 check_and_update_ports() {
+    if [ -z "${CODESPACE_NAME:-}" ] || ! command -v gh >/dev/null 2>&1; then
+        return 0
+    fi
+
     local ports_json
     ports_json=$(gh codespace ports -c "$CODESPACE_NAME" --json sourcePort,visibility 2>/dev/null || echo "[]")
 
@@ -107,10 +175,48 @@ check_and_update_ports() {
     fi
 }
 
-# Monitoreo con reintentos para dar tiempo a que los túneles de Codespaces estén activos
-MAX_ATTEMPTS=60 # 60 * 3s = hasta 180 segundos (3 minutos)
-attempt=1
+# ---------------------------------------------------------------------------
+# Modo Daemon Continuo
+# ---------------------------------------------------------------------------
+if [ "$IS_DAEMON" = true ]; then
+    # Evitar múltiples instancias del daemon
+    if [ -f "$DAEMON_PID_FILE" ]; then
+        OLD_PID=$(cat "$DAEMON_PID_FILE" 2>/dev/null || echo "")
+        if [ -n "$OLD_PID" ] && kill -0 "$OLD_PID" 2>/dev/null; then
+            if grep -q "ensure-ports-public" "/proc/$OLD_PID/cmdline" 2>/dev/null; then
+                echo "[!] Daemon ensure-ports-public ya está en ejecución (PID: $OLD_PID). Saliendo."
+                exit 0
+            fi
+        fi
+    fi
+    echo "$$" > "$DAEMON_PID_FILE"
+    trap 'rm -f "$DAEMON_PID_FILE"' EXIT INT TERM
 
+    echo "[+] Daemon de supervisión activo (PID: $$)..."
+    cycle=0
+    while true; do
+        supervise_services
+
+        # Verificar visibilidad pública cada 10 ciclos (~30 segundos) o en el primer ciclo
+        if [ "$cycle" -eq 0 ] || [ $((cycle % 10)) -eq 0 ]; then
+            check_and_update_ports >/dev/null 2>&1 || true
+            echo "[$(date -u +'%Y-%m-%d %H:%M:%SZ')] Supervisión activa - Puertos 8080, 6080, 3000 verificados" > /tmp/.codespace-heartbeat.log 2>/dev/null || true
+        fi
+
+        sleep 3
+        cycle=$((cycle + 1))
+    done
+fi
+
+# ---------------------------------------------------------------------------
+# Modo Ejecución Única / Disparador
+# ---------------------------------------------------------------------------
+# 1. Supervisar servicios inmediatamente
+supervise_services
+
+# 2. Comprobar y actualizar visibilidad con reintentos iniciales
+MAX_ATTEMPTS=20
+attempt=1
 while [ "$attempt" -le "$MAX_ATTEMPTS" ]; do
     set +e
     check_and_update_ports
@@ -119,11 +225,25 @@ while [ "$attempt" -le "$MAX_ATTEMPTS" ]; do
 
     if [ "$status" -eq 0 ]; then
         echo "[+] Confirmado: Todos los puertos del sistema (${TARGET_PORTS[*]}) están públicos."
-        exit 0
+        break
     fi
 
-    sleep 3
+    sleep 2
     attempt=$((attempt + 1))
 done
 
-echo "[!] Tiempo de espera agotado: se intentó actualizar los puertos pero algunos aún no están listos."
+# 3. Asegurar que el daemon continuo esté corriendo en segundo plano
+DAEMON_RUNNING=false
+if [ -f "$DAEMON_PID_FILE" ]; then
+    DPID=$(cat "$DAEMON_PID_FILE" 2>/dev/null || echo "")
+    if [ -n "$DPID" ] && kill -0 "$DPID" 2>/dev/null; then
+        DAEMON_RUNNING=true
+    fi
+fi
+
+if [ "$DAEMON_RUNNING" = false ]; then
+    echo "[+] Iniciando daemon de supervisión en segundo plano..."
+    SCRIPT_PATH="$0"
+    [ ! -f "$SCRIPT_PATH" ] && SCRIPT_PATH="/usr/local/bin/ensure-ports-public.sh"
+    setsid nohup bash "$SCRIPT_PATH" --daemon >"${LOG_DIR}/ensure-ports-public.log" 2>&1 &
+fi

@@ -147,15 +147,15 @@ if [ -f "$AGY_BIN" ] || command -v "$AGY_BIN" >/dev/null 2>&1; then
         echo "[+] Iniciando Antigravity 2.0 Web Hub en el puerto 3000..."
         export DISPLAY="${DISPLAY_NUM:-:1}"
         unset BROWSER
-        if command -v daemonize >/dev/null 2>&1; then
-            daemonize -u "${USER:-codespace}" -c /workspaces/linux-kde-lite \
-                -e "${LOG_DIR}/antigravity-hub.log" \
-                -o "${LOG_DIR}/antigravity-hub.log" \
-                "$AGY_BIN" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite
+        if command -v script >/dev/null 2>&1; then
+            setsid script -q -c "\"$AGY_BIN\" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite" /dev/null </dev/null >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
         else
-            (
-                nohup "$AGY_BIN" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite </dev/null >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
-            ) &
+            setsid python3 -c '
+import pty, os, sys
+master, slave = pty.openpty()
+os.dup2(slave, 0)
+os.execlp(sys.argv[1], sys.argv[1], "--hub", "--hub-port=3000", "--app_data_dir=antigravity", "--add-dir=/workspaces/linux-kde-lite")
+' "$AGY_BIN" >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
         fi
 
         # Esperar hasta que el puerto 3000 esté activo
@@ -171,15 +171,15 @@ if [ -f "$AGY_BIN" ] || command -v "$AGY_BIN" >/dev/null 2>&1; then
     fi
 fi
 
-# 10. Asegurar visibilidad pública de los puertos en GitHub Codespaces en segundo plano
+# 10. Asegurar visibilidad pública de los puertos y supervisión continua en segundo plano
 if [ -n "${CODESPACE_NAME:-}" ]; then
-    echo "[+] Iniciando supervisión de visibilidad pública de puertos (8080, 6080, 3000)..."
+    echo "[+] Iniciando supervisor de puertos y servicios (8080, 6080, 3000)..."
     ENSURE_BIN="/usr/local/bin/ensure-ports-public.sh"
     if [ ! -f "$ENSURE_BIN" ] && [ -f "/workspaces/linux-kde-lite/scripts/ensure-ports-public.sh" ]; then
         ENSURE_BIN="/workspaces/linux-kde-lite/scripts/ensure-ports-public.sh"
     fi
     if [ -f "$ENSURE_BIN" ]; then
-        nohup bash "$ENSURE_BIN" > "${LOG_DIR}/ensure-ports-public.log" 2>&1 &
+        setsid nohup bash "$ENSURE_BIN" --daemon > "${LOG_DIR}/ensure-ports-public.log" 2>&1 &
     fi
 fi
 
