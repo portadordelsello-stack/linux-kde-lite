@@ -139,6 +139,8 @@ fi
 if [ -f "$AGY_BIN" ] || command -v "$AGY_BIN" >/dev/null 2>&1; then
     if ! ss -tlpn 2>/dev/null | grep -E "(:3000\s)" >/dev/null 2>&1; then
         echo "[+] Iniciando Antigravity 2.0 Web Hub en el puerto 3000..."
+        export DISPLAY="${DISPLAY_NUM:-:1}"
+        unset BROWSER
         nohup "$AGY_BIN" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite </dev/null >"${LOG_DIR}/antigravity-hub.log" 2>&1 &
     fi
 fi

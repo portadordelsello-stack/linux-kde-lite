@@ -195,6 +195,48 @@ sudo bash -c 'cat << "EOF" > /etc/opt/chrome/policies/managed/antigravity.json
 }
 EOF'
 
+# Configurar wrapper inteligente de xdg-open para soportar autenticaciones OAuth y Chrome en KDE
+[ ! -f "/usr/bin/xdg-open.orig" ] && sudo cp /usr/bin/xdg-open /usr/bin/xdg-open.orig 2>/dev/null || true
+sudo bash -c 'cat << "EOF" > /usr/bin/xdg-open
+#!/usr/bin/env bash
+URL="$1"
+[ -z "$URL" ] && exit 0
+
+echo "[$(date -u)] xdg-open called with: $URL" >> /tmp/xdg-open.log
+echo "$URL" > /tmp/last_oauth_url.txt
+echo "$URL" > /home/codespace/.vnc/last_oauth_url.txt 2>/dev/null || true
+chmod 666 /tmp/last_oauth_url.txt /tmp/xdg-open.log /home/codespace/.vnc/last_oauth_url.txt 2>/dev/null || true
+
+# Detect active KDE DBUS if not present in environment
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
+    KDE_PID=$(pgrep -f "plasmashell" | head -n 1)
+    if [ -n "$KDE_PID" ] && [ -r "/proc/$KDE_PID/environ" ]; then
+        KDE_DBUS=$(tr "\0" "\n" < "/proc/$KDE_PID/environ" | grep "^DBUS_SESSION_BUS_ADDRESS=")
+        [ -n "$KDE_DBUS" ] && export "$KDE_DBUS"
+    fi
+fi
+
+export DISPLAY="${DISPLAY:-:1}"
+
+if command -v google-chrome >/dev/null 2>&1; then
+    nohup /usr/bin/google-chrome "$URL" >/dev/null 2>&1 &
+fi
+
+exit 0
+EOF
+chmod +x /usr/bin/xdg-open'
+
+# Redirigir helpers de navegador de VS Code Remote a xdg-open
+for b in /vscode/bin/linux-x64/*/bin/helpers/browser.sh; do
+    [ -f "$b" ] || continue
+    [ ! -f "${b}.orig" ] && sudo cp "$b" "${b}.orig" 2>/dev/null || true
+    sudo bash -c "cat << 'EOF' > '$b'
+#!/usr/bin/env bash
+exec /usr/bin/xdg-open \"\$@\"
+EOF
+chmod +x '$b'"
+done
+
 echo "[2/4] Configurando entorno VNC y credenciales..."
 echo "$USER:$USER" | sudo chpasswd 2>/dev/null || true
 mkdir -p "$HOME/.vnc"

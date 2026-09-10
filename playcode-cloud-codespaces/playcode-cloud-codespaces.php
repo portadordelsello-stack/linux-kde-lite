@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Play Code - Cloud Codespaces & Linux Desktop
  * Description: Conector oficial de GitHub Codespaces para MasterStudy LMS. Permite a los alumnos conectar su cuenta de GitHub, encender su máquina virtual y acceder a su escritorio Linux KDE en la nube.
- * Version: 1.2.1
+ * Version: 1.2.2
  * Author: Play Code / Antigravity
  * Text Domain: playcode-codespaces
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PLAYCODE_CODESPACES_VERSION', '1.2.1' );
+define( 'PLAYCODE_CODESPACES_VERSION', '1.2.2' );
 define( 'PLAYCODE_CODESPACES_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PLAYCODE_CODESPACES_URL', plugin_dir_url( __FILE__ ) );
 
@@ -916,15 +916,16 @@ function playcode_codespaces_render_build_dashboard() {
 							id="playcode-agy-iframe"
 							class="playcode-agy-frame"
 							src="about:blank"
-							allow="clipboard-read; clipboard-write; fullscreen; microphone"
+							allow="clipboard-read; clipboard-write; fullscreen; microphone; camera; display-capture"
+							sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts allow-top-navigation-by-user-activation"
 						></iframe>
 					</div>
 
 					<!-- Tip Box -->
-					<div class="playcode-cs-notice">
-						<span>💡</span>
+					<div class="playcode-cs-notice" style="background:#EFF6FF; border-color:#3B82F6; color:#1E40AF;">
+						<span style="font-size:18px;">💡</span>
 						<div>
-							<strong>Flujo de Vibecoding:</strong> La primera vez que cargues tu entorno en una sesión, presiona el botón verde <strong>"Continue"</strong> de GitHub. Luego conéctate con tu cuenta de Google para activar Gemini. Todo el código que generes vive en la misma máquina que tu Escritorio Linux.
+							<strong>Para conectar tu cuenta de Google:</strong> Debido a las políticas de seguridad de Google que restringen el login dentro de ventanas embebidas, presiona el botón azul <strong>↗️ Abrir en Pestaña Nueva</strong> en la barra superior (o hazlo desde Google Chrome en tu <strong>🖥️ Máquina Virtual Linux</strong>). Una vez autenticado, Antigravity quedará habilitado automáticamente en este panel.
 						</div>
 					</div>
 				</div>
