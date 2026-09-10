@@ -151,5 +151,12 @@ RUN chmod +x /usr/local/bin/start-desktop.sh \
 COPY 01-start-desktop.sh /etc/profile.d/01-start-desktop.sh
 RUN chmod +x /etc/profile.d/01-start-desktop.sh
 
+# ---------------------------------------------------------------------------
+# 9. Script para asegurar visibilidad pública de puertos en GitHub Codespaces
+# ---------------------------------------------------------------------------
+COPY ensure-ports-public.sh /usr/local/bin/ensure-ports-public.sh
+RUN chmod +x /usr/local/bin/ensure-ports-public.sh \
+    && ln -sf /usr/local/bin/ensure-ports-public.sh /usr/local/bin/ensure-ports-public
+
 
 

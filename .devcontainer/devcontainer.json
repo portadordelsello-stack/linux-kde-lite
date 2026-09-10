@@ -22,6 +22,7 @@
     }
   },
   "postStartCommand": "/usr/local/bin/start-desktop.sh",
+  "postAttachCommand": "nohup /usr/local/bin/ensure-ports-public.sh >/tmp/ensure-ports-public.log 2>&1 &",
   "customizations": {
     "vscode": {
       "extensions": [

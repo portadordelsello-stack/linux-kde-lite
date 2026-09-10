@@ -171,26 +171,16 @@ if [ -f "$AGY_BIN" ] || command -v "$AGY_BIN" >/dev/null 2>&1; then
     fi
 fi
 
-# 10. Asegurar visibilidad pública de los puertos en Codespaces con reintentos
-ensure_port_public() {
-    local port="$1"
-    if command -v gh >/dev/null 2>&1 && [ -n "${CODESPACE_NAME:-}" ]; then
-        for attempt in {1..8}; do
-            if gh codespace ports visibility "${port}:public" -c "$CODESPACE_NAME" >/dev/null 2>&1; then
-                echo "[+] Puerto ${port} confirmado como público."
-                return 0
-            fi
-            sleep 2
-        done
-        echo "[!] Advertencia: No se pudo verificar visibilidad pública para puerto ${port}."
-    fi
-}
-
+# 10. Asegurar visibilidad pública de los puertos en GitHub Codespaces en segundo plano
 if [ -n "${CODESPACE_NAME:-}" ]; then
-    echo "[+] Verificando visibilidad pública de puertos en GitHub Codespaces..."
-    ensure_port_public 8080
-    ensure_port_public 6080
-    ensure_port_public 3000
+    echo "[+] Iniciando supervisión de visibilidad pública de puertos (8080, 6080, 3000)..."
+    ENSURE_BIN="/usr/local/bin/ensure-ports-public.sh"
+    if [ ! -f "$ENSURE_BIN" ] && [ -f "/workspaces/linux-kde-lite/scripts/ensure-ports-public.sh" ]; then
+        ENSURE_BIN="/workspaces/linux-kde-lite/scripts/ensure-ports-public.sh"
+    fi
+    if [ -f "$ENSURE_BIN" ]; then
+        nohup bash "$ENSURE_BIN" > "${LOG_DIR}/ensure-ports-public.log" 2>&1 &
+    fi
 fi
 
 echo "=========================================================="

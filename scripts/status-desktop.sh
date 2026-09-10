@@ -50,5 +50,19 @@ else
     echo "  [INACTIVO] Antigravity 2.0 Web Hub no está corriendo en el puerto 3000."
 fi
 
+# Verificar visibilidad de puertos en GitHub Codespaces
+if [ -n "${CODESPACE_NAME:-}" ] && command -v gh >/dev/null 2>&1; then
+    echo "--- Visibilidad en GitHub Codespaces ---"
+    PORTS_JSON=$(gh codespace ports -c "$CODESPACE_NAME" --json sourcePort,visibility 2>/dev/null || echo "[]")
+    for P in 8080 6080 3000; do
+        VIS=$(echo "$PORTS_JSON" | jq -r ".[] | select(.sourcePort == $P) | .visibility" 2>/dev/null || echo "no detectado")
+        if [ "$VIS" = "public" ]; then
+            echo "  [PÚBLICO] Puerto $P está público (accesible externamente)."
+        else
+            echo "  [ALERTA]  Puerto $P está como '$VIS' (se requiere visibilidad pública)."
+        fi
+    done
+fi
+
 echo "====================================="
 

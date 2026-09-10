@@ -337,6 +337,20 @@ except Exception as err:
     print(f"Clipboard patch skipped: {err}")
 ' 2>/dev/null || true
 fi
+
+# Instalar scripts globales en /usr/local/bin
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/start-desktop.sh" ]; then
+    sudo cp "$SCRIPT_DIR/start-desktop.sh" /usr/local/bin/start-desktop.sh
+    sudo chmod +x /usr/local/bin/start-desktop.sh
+    sudo ln -sf /usr/local/bin/start-desktop.sh /usr/local/bin/start-desktop
+fi
+if [ -f "$SCRIPT_DIR/ensure-ports-public.sh" ]; then
+    sudo cp "$SCRIPT_DIR/ensure-ports-public.sh" /usr/local/bin/ensure-ports-public.sh
+    sudo chmod +x /usr/local/bin/ensure-ports-public.sh
+    sudo ln -sf /usr/local/bin/ensure-ports-public.sh /usr/local/bin/ensure-ports-public
+fi
+
 touch "$DONE_FILE" 2>/dev/null || true
 
 echo "=========================================================="
