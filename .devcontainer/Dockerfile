@@ -64,7 +64,9 @@ RUN [ -f /opt/antigravity-ide/resources/app/resources/linux/code.png ] \
     && printf '[Desktop Entry]\nName=Antigravity IDE\nComment=Google Antigravity Code Editor\nExec=/usr/local/bin/antigravity-ide %%F\nIcon=/usr/share/pixmaps/antigravity-ide.png\nType=Application\nStartupNotify=false\nStartupWMClass=Antigravity-ide\nCategories=Development;IDE;TextEditor;\n' \
         > /usr/share/applications/antigravity-ide.desktop \
     && printf '[Desktop Entry]\nName=Antigravity Web Hub (Puerto 3000)\nComment=Google Antigravity 2.0 Web UI\nExec=google-chrome --new-window http://localhost:3000\nIcon=/usr/share/pixmaps/antigravity-ide.png\nType=Application\nStartupNotify=false\nCategories=Development;IDE;\n' \
-        > /usr/share/applications/antigravity-web.desktop
+        > /usr/share/applications/antigravity-web.desktop \
+    && mkdir -p /etc/opt/chrome/policies/managed \
+    && printf '{\n  "RestoreOnStartup": 4,\n  "RestoreOnStartupURLs": ["http://localhost:3000"],\n  "HomepageLocation": "http://localhost:3000",\n  "HomepageIsNewTabPage": false,\n  "ShowHomeButton": true,\n  "BookmarkBarEnabled": true,\n  "ManagedBookmarks": [{"name": "Antigravity 2.0 Web Hub", "url": "http://localhost:3000"}, {"name": "PlayCode Campus LMS", "url": "https://edu.playcode.com.ar"}]\n}\n' > /etc/opt/chrome/policies/managed/antigravity.json
 
 # ---------------------------------------------------------------------------
 # 3b. Instalar Google Antigravity CLI (agy - Servidor Web Hub Puerto 3000)

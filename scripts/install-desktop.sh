@@ -170,6 +170,31 @@ chmod +x "$HOME/Desktop/antigravity-ide.desktop" 2>/dev/null || true
 cp /usr/share/applications/antigravity-web.desktop "$HOME/Desktop/" 2>/dev/null || true
 chmod +x "$HOME/Desktop/antigravity-web.desktop" 2>/dev/null || true
 
+# Configurar política de Google Chrome para abrir Antigravity Web Hub por defecto
+sudo mkdir -p /etc/opt/chrome/policies/managed
+sudo bash -c 'cat << "EOF" > /etc/opt/chrome/policies/managed/antigravity.json
+{
+  "RestoreOnStartup": 4,
+  "RestoreOnStartupURLs": [
+    "http://localhost:3000"
+  ],
+  "HomepageLocation": "http://localhost:3000",
+  "HomepageIsNewTabPage": false,
+  "ShowHomeButton": true,
+  "BookmarkBarEnabled": true,
+  "ManagedBookmarks": [
+    {
+      "name": "Antigravity 2.0 Web Hub",
+      "url": "http://localhost:3000"
+    },
+    {
+      "name": "PlayCode Campus LMS",
+      "url": "https://edu.playcode.com.ar"
+    }
+  ]
+}
+EOF'
+
 echo "[2/4] Configurando entorno VNC y credenciales..."
 echo "$USER:$USER" | sudo chpasswd 2>/dev/null || true
 mkdir -p "$HOME/.vnc"
