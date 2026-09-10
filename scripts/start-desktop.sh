@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 0. Bloqueo atómico anti-concurrencia: previene múltiples ejecuciones simultáneas
-START_LOCK="/tmp/.start-desktop-mutex.lock"
-exec 200>"$START_LOCK"
-if ! flock -n 200; then
-    echo "[!] start-desktop.sh ya se encuentra en ejecución en otro proceso. Omitiendo."
-    exit 0
+# 0. Bloqueo seguro anti-concurrencia sin fuga de descriptores
+START_LOCK="/tmp/.start-desktop.pid"
+if [ -f "$START_LOCK" ]; then
+    PID=$(cat "$START_LOCK" 2>/dev/null || echo "")
+    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+        if grep -q "start-desktop" "/proc/$PID/cmdline" 2>/dev/null; then
+            echo "[!] start-desktop.sh ya se encuentra en ejecución en PID $PID. Omitiendo."
+            exit 0
+        fi
+    fi
 fi
+echo "$$" > "$START_LOCK"
+trap 'rm -f "$START_LOCK"' EXIT INT TERM
 
 DISPLAY_NUM=":1"
 DISP_INDEX="1"
@@ -141,7 +147,27 @@ if [ -f "$AGY_BIN" ] || command -v "$AGY_BIN" >/dev/null 2>&1; then
         echo "[+] Iniciando Antigravity 2.0 Web Hub en el puerto 3000..."
         export DISPLAY="${DISPLAY_NUM:-:1}"
         unset BROWSER
-        nohup "$AGY_BIN" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite </dev/null >"${LOG_DIR}/antigravity-hub.log" 2>&1 &
+        if command -v daemonize >/dev/null 2>&1; then
+            daemonize -u "${USER:-codespace}" -c /workspaces/linux-kde-lite \
+                -e "${LOG_DIR}/antigravity-hub.log" \
+                -o "${LOG_DIR}/antigravity-hub.log" \
+                "$AGY_BIN" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite
+        else
+            (
+                nohup "$AGY_BIN" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite </dev/null >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
+            ) &
+        fi
+
+        # Esperar hasta que el puerto 3000 esté activo
+        for check in {1..10}; do
+            if ss -tlpn 2>/dev/null | grep -E "(:3000\s)" >/dev/null 2>&1; then
+                echo "[+] Antigravity 2.0 Web Hub activo y verificado en puerto 3000."
+                break
+            fi
+            sleep 1
+        done
+    else
+        echo "[+] Antigravity Web Hub ya está activo en puerto 3000."
     fi
 fi
 

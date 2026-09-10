@@ -36,6 +36,7 @@ RUN echo "debconf debconf/frontend select Noninteractive" | debconf-set-selectio
         curl \
         wget \
         xdotool \
+        daemonize \
         /tmp/google-chrome.deb \
     && rm -f /tmp/google-chrome.deb \
     && apt-get clean \

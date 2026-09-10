@@ -74,7 +74,8 @@ if ! command -v startplasma-x11 >/dev/null 2>&1 || \
         xterm \
         curl \
         wget \
-        xdotool
+        xdotool \
+        daemonize
 else
     echo "[1/4] Dependencias base (KDE, TigerVNC, noVNC, autocutsel) ya instaladas. Omitiendo apt-get."
 fi
