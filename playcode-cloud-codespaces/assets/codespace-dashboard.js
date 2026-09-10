@@ -25,6 +25,7 @@
 		let pollTimer      = null;
 		let currentCodespace = null;
 		let autoOpenAgyPending = false;
+		let countdownTimer = null;
 
 		/** Shorthand to get an element by the prefixed ID (e.g. prefix + 'loading-bar') */
 		const $ = function(idSuffix) {
@@ -183,6 +184,88 @@
 				|| s === 'provisioning' || s === 'rebuilding';
 		}
 
+		/* ------------------------------------------------------------------ */
+		/* COUNTDOWN TIMER (180s)                                             */
+		/* ------------------------------------------------------------------ */
+
+		function getCountdownStorageKey() {
+			return currentCodespace && currentCodespace.name
+				? 'playcode_cs_countdown_' + currentCodespace.name
+				: null;
+		}
+
+		function getRemainingCountdown() {
+			const key = getCountdownStorageKey();
+			if (!key) return 0;
+			try {
+				const target = localStorage.getItem(key);
+				if (!target) return 0;
+				const remaining = Math.ceil((parseInt(target, 10) - Date.now()) / 1000);
+				return remaining > 0 ? remaining : 0;
+			} catch (e) {
+				return 0;
+			}
+		}
+
+		function startCountdown(seconds) {
+			const key = getCountdownStorageKey();
+			if (!key) return;
+			try {
+				const target = Date.now() + (seconds * 1000);
+				localStorage.setItem(key, target.toString());
+			} catch (e) {}
+			runCountdown();
+		}
+
+		function clearCountdown() {
+			if (countdownTimer) {
+				clearInterval(countdownTimer);
+				countdownTimer = null;
+			}
+			const key = getCountdownStorageKey();
+			if (key) {
+				try { localStorage.removeItem(key); } catch (e) {}
+			}
+			const btnOpenDesktop = $('btn-open-desktop');
+			if (btnOpenDesktop) {
+				btnOpenDesktop.classList.remove('is-waiting');
+				btnOpenDesktop.innerHTML = '🌐 Abrir Máquina Virtual Linux (KDE)';
+				btnOpenDesktop.removeAttribute('title');
+			}
+		}
+
+		function runCountdown() {
+			if (countdownTimer) clearInterval(countdownTimer);
+
+			function tick() {
+				const remaining = getRemainingCountdown();
+				const btnOpenDesktop = $('btn-open-desktop');
+
+				if (remaining > 0) {
+					if (btnOpenDesktop) {
+						btnOpenDesktop.style.display = 'inline-flex';
+						btnOpenDesktop.classList.add('is-waiting');
+						btnOpenDesktop.innerHTML = `⏳ Preparando Escritorio Linux (${remaining}s)...`;
+						btnOpenDesktop.setAttribute(
+							'title',
+							`El escritorio KDE Plasma se está iniciando en la nube. Por favor espera ${remaining} segundos para ingresar.`
+						);
+					}
+				} else {
+					clearCountdown();
+					if (btnOpenDesktop && currentCodespace) {
+						btnOpenDesktop.classList.remove('is-waiting');
+						btnOpenDesktop.innerHTML = '🌐 Abrir Máquina Virtual Linux (KDE)';
+						btnOpenDesktop.removeAttribute('title');
+						btnOpenDesktop.href = `https://${currentCodespace.name}-8080.app.github.dev/vnc.html?autoconnect=true&resize=remote`;
+					}
+				}
+			}
+
+			tick();
+			countdownTimer = setInterval(tick, 1000);
+		}
+
 		function updateStateUI(state) {
 			const badge          = $('state-badge');
 			const btnStart       = $('btn-start');
@@ -205,6 +288,14 @@
 				if (btnOpenDesktop && currentCodespace) {
 					btnOpenDesktop.style.display = 'inline-flex';
 					btnOpenDesktop.href = `https://${currentCodespace.name}-8080.app.github.dev/vnc.html?autoconnect=true&resize=remote`;
+					const rem = getRemainingCountdown();
+					if (rem > 0) {
+						runCountdown();
+					} else {
+						btnOpenDesktop.classList.remove('is-waiting');
+						btnOpenDesktop.innerHTML = '🌐 Abrir Máquina Virtual Linux (KDE)';
+						btnOpenDesktop.removeAttribute('title');
+					}
 				}
 				if (btnOpenVscode && currentCodespace) {
 					btnOpenVscode.href = currentCodespace.web_url || '#';
@@ -228,10 +319,21 @@
 					transientAlert.style.display = 'block';
 					transientAlert.innerHTML = viewType === 'build'
 						? '<strong>⏳ Tu entorno de Build se está iniciando...</strong> Esto toma entre 10 y 20 segundos. Antigravity cargará automáticamente cuando esté listo.'
-						: '<strong>⏳ Tu máquina virtual se está levantando...</strong> Esto toma entre 10 y 20 segundos. Esta pantalla se actualizará automáticamente.';
+						: '<strong>⏳ Tu máquina virtual se está levantando...</strong> Se está configurando el escritorio KDE Plasma. El botón se habilitará automáticamente al finalizar el segundero.';
 				}
 				const btnOpenDesktop = $('btn-open-desktop');
-				if (btnOpenDesktop) btnOpenDesktop.style.display = 'none';
+				if (btnOpenDesktop) {
+					if (viewType === 'desktop') {
+						btnOpenDesktop.style.display = 'inline-flex';
+						if (getRemainingCountdown() === 0) {
+							startCountdown(180);
+						} else {
+							runCountdown();
+						}
+					} else {
+						btnOpenDesktop.style.display = 'none';
+					}
+				}
 
 			} else { // Stopped / Unknown
 				if (badge) {
@@ -243,7 +345,10 @@
 				if (transientAlert) transientAlert.style.display = 'none';
 
 				const btnOpenDesktop = $('btn-open-desktop');
-				if (btnOpenDesktop) btnOpenDesktop.style.display = 'none';
+				if (btnOpenDesktop) {
+					clearCountdown();
+					btnOpenDesktop.style.display = 'none';
+				}
 			}
 		}
 
@@ -265,6 +370,7 @@
 
 		function stopCodespace(name) {
 			showLoadingState('Apagando máquina virtual...');
+			clearCountdown();
 			postAjax('playcode_cs_stop', { name: name }, function(err, response) {
 				hideLoadingState();
 				if (err || !response || !response.success) {
@@ -376,12 +482,25 @@
 				});
 			}
 
+			// Desktop-only: prevent clicking while waiting / countdown active
+			const btnOpenDesktop = $('btn-open-desktop');
+			if (btnOpenDesktop) {
+				btnOpenDesktop.addEventListener('click', function(e) {
+					if (getRemainingCountdown() > 0 || btnOpenDesktop.classList.contains('is-waiting')) {
+						e.preventDefault();
+						e.stopPropagation();
+						return false;
+					}
+				});
+			}
+
 			// Start
 			const btnStart = $('btn-start');
 			if (btnStart) {
 				btnStart.addEventListener('click', function(e) {
 					e.preventDefault();
 					if (!currentCodespace || !currentCodespace.name) return;
+					startCountdown(180);
 					startCodespace(currentCodespace.name);
 				});
 			}
@@ -393,6 +512,7 @@
 					e.preventDefault();
 					if (!currentCodespace || !currentCodespace.name) return;
 					if (confirm('¿Deseas apagar tu máquina virtual ahora? Puedes volver a encenderla en cualquier momento.')) {
+						clearCountdown();
 						stopCodespace(currentCodespace.name);
 					}
 				});
@@ -421,6 +541,11 @@
 							alert(response ? response.data : 'Iniciando creación en GitHub...');
 							window.open('https://codespaces.new/portadordelsello-stack/linux-kde-lite', '_blank');
 							return;
+						}
+						if (response.data && response.data.name) {
+							try {
+								localStorage.setItem('playcode_cs_countdown_' + response.data.name, (Date.now() + 180000).toString());
+							} catch (e) {}
 						}
 						fetchStatus();
 						startPolling();

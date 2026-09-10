@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Play Code - Cloud Codespaces & Linux Desktop
  * Description: Conector oficial de GitHub Codespaces para MasterStudy LMS. Permite a los alumnos conectar su cuenta de GitHub, encender su máquina virtual y acceder a su escritorio Linux KDE en la nube.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: Play Code / Antigravity
  * Text Domain: playcode-codespaces
  */
@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'PLAYCODE_CODESPACES_VERSION', '1.2.0' );
+define( 'PLAYCODE_CODESPACES_VERSION', '1.2.1' );
 define( 'PLAYCODE_CODESPACES_PATH', plugin_dir_path( __FILE__ ) );
 define( 'PLAYCODE_CODESPACES_URL', plugin_dir_url( __FILE__ ) );
 

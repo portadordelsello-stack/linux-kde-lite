@@ -263,6 +263,32 @@
 	box-shadow: 4px 4px 0px #001F4A !important;
 }
 
+/* Waiting button with countdown (cursor not-allowed) */
+.playcode-btn.is-waiting {
+	background: #94A3B8 !important;
+	color: #FFFFFF !important;
+	border-color: #475569 !important;
+	cursor: not-allowed !important;
+	pointer-events: auto !important;
+	transform: none !important;
+	box-shadow: 2px 2px 0px #001F4A !important;
+	opacity: 0.9;
+	user-select: none;
+}
+
+.playcode-btn.is-waiting:hover {
+	background: #64748B !important;
+	color: #FFFFFF !important;
+	cursor: not-allowed !important;
+	transform: none !important;
+	box-shadow: 2px 2px 0px #001F4A !important;
+}
+
+.playcode-btn.is-waiting:active {
+	transform: none !important;
+	box-shadow: 2px 2px 0px #001F4A !important;
+}
+
 /* Instructions / Help card */
 .playcode-cs-notice {
 	background: #FEF9C3;
