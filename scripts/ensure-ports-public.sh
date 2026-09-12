@@ -142,17 +142,16 @@ check_and_update_ports() {
     fi
 
     local to_update=()
-    local private_ports
-    private_ports=$(get_private_ports "$ports_json")
-
-    for p in $private_ports; do
-        if [ -n "$p" ] && [ "$p" != "null" ]; then
-            to_update+=("${p}:public")
+    for tp in "${TARGET_PORTS[@]}"; do
+        local vis
+        vis=$(get_port_visibility "$ports_json" "$tp")
+        if [ "$vis" != "public" ]; then
+            to_update+=("${tp}:public")
         fi
     done
 
     if [ ${#to_update[@]} -gt 0 ]; then
-        echo "[+] Cambiando visibilidad a pública para puertos: ${to_update[*]}"
+        echo "[+] Asegurando visibilidad pública para puertos objetivo: ${to_update[*]}"
         gh codespace ports visibility "${to_update[@]}" -c "$CODESPACE_NAME" >/dev/null 2>&1 || true
     fi
 
