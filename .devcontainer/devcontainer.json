@@ -19,14 +19,7 @@
       "label": "Antigravity Web Hub",
       "onAutoForward": "silent",
       "visibility": "public"
-    },
-    "5901": {
-      "label": "TigerVNC (Internal)",
-      "onAutoForward": "ignore"
     }
-  },
-  "otherPortsAttributes": {
-    "onAutoForward": "ignore"
   },
   "postStartCommand": "/usr/local/bin/start-desktop.sh",
   "postAttachCommand": "nohup /usr/local/bin/ensure-ports-public.sh >/tmp/ensure-ports-public.log 2>&1 &",
@@ -38,15 +31,7 @@
       "settings": {
         "security.workspace.trust.enabled": false,
         "security.workspace.trust.startupPrompt": "never",
-        "antigravity.serverPort": 3000,
-        "remote.otherPortsAttributes": {
-          "onAutoForward": "ignore"
-        },
-        "remote.portsAttributes": {
-          "5901": {
-            "onAutoForward": "ignore"
-          }
-        }
+        "antigravity.serverPort": 3000
       }
     }
   }
