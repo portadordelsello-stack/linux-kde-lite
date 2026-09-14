@@ -155,11 +155,32 @@ export LANG=C.UTF-8
 export LC_ALL=C.UTF-8
 
 clear
-echo -e "\033[1;36m=========================================================="
-echo -e " 🚀 Google Antigravity 2.0 — Web Interactive AI Hub"
-echo -e " Directorio de trabajo: $(pwd)"
-echo -e " Modo: ⚡ TURBO (Permisos auto-aprobados)"
-echo -e "==========================================================\033[0m"
+
+# TrueColor ANSI Gradients (Play Code Brand Orange-Gold, Antigravity Pixel Art Style)
+C1='\033[38;2;255;85;0m'
+C2='\033[38;2;255;115;0m'
+C3='\033[38;2;255;145;0m'
+C4='\033[38;2;255;175;0m'
+C5='\033[38;2;255;200;0m'
+C6='\033[38;2;255;220;25m'
+C7='\033[38;2;255;235;60m'
+
+R='\033[0m'
+WHITE='\033[1;37m'
+ORANGE='\033[1;38;2;255;165;0m'
+CYAN='\033[1;38;2;80;190;255m'
+GREEN='\033[1;38;2;50;215;75m'
+MUTED='\033[38;2;140;160;180m'
+DIVIDER='\033[38;2;60;80;110m'
+
+echo ""
+echo -e "  ${C1}   ▄██▄        ▄█   ▄██▄      ${R}${ORANGE}▶ PLAY CODE${R} ${WHITE}• Plataforma Educativa${R}"
+echo -e "  ${C2}  ▄██▀        ▄█▀    ▀██▄     ${R}  ${WHITE}Google Antigravity 2.0${R} ${CYAN}(Web AI Hub)${R}"
+echo -e "  ${C3} ▄██▀        ▄█▀      ▀██▄    ${R}  ${MUTED}¡Bienvenido/a a tu entorno interactivo de IA!${R}"
+echo -e "  ${C4}███▄        ▄█▀        ▄███   ${R}  ${GREEN}⚡ Modo: TURBO${R} ${MUTED}(Permisos auto-aprobados)${R}"
+echo -e "  ${C5} ▀██▄      ▄█▀        ▄██▀    ${R}  ${MUTED}Directorio:${R} ${CYAN}/workspaces/linux-kde-lite${R}"
+echo -e "  ${C6}  ▀██▄    ▄█▀        ▄██▀     ${R}  ${DIVIDER}──────────────────────────────────────────${R}"
+echo -e "  ${C7}   ▀██▄   █▀        ▄██▀      ${R}  ${CYAN}💡 Tip:${R} ${MUTED}Escribe tus instrucciones para comenzar${R}"
 echo ""
 
 AGY_BIN="/usr/local/bin/agy"

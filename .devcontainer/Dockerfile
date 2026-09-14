@@ -88,7 +88,60 @@ RUN [ ! -f /usr/bin/xdg-open.orig ] && cp /usr/bin/xdg-open /usr/bin/xdg-open.or
 # 3d. Instalar ttyd y sesión web interactiva de Antigravity en Puerto 3000
 RUN curl -fsSL -o /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64" \
     && chmod +x /usr/local/bin/ttyd \
-    && printf '#!/usr/bin/env bash\ncd /workspaces/linux-kde-lite 2>/dev/null || cd "$HOME"\nexport TERM=xterm-256color\nexport LANG=C.UTF-8\nexport LC_ALL=C.UTF-8\nclear\necho -e "\\033[1;36m=========================================================="\necho -e " 🚀 Google Antigravity 2.0 — Web Interactive AI Hub"\necho -e " Directorio de trabajo: $(pwd)"\necho -e " Modo: ⚡ TURBO (Permisos auto-aprobados)"\necho -e "==========================================================\\033[0m"\necho ""\nAGY_BIN="/usr/local/bin/agy"\n[ ! -f "$AGY_BIN" ] && [ -f "/home/codespace/.gemini/bin/agy" ] && AGY_BIN="/home/codespace/.gemini/bin/agy"\n[ ! -f "$AGY_BIN" ] && AGY_BIN="$(command -v agy || echo "")"\nif [ -n "$AGY_BIN" ] && [ -x "$AGY_BIN" ]; then\n    while true; do\n        "$AGY_BIN" --add-dir="/workspaces/linux-kde-lite" --dangerously-skip-permissions "$@"\n        echo ""\n        echo -e "\\033[1;33m[!] Sesión de Antigravity finalizada. Presiona ENTER para reiniciar...\\033[0m"\n        read -r\n        clear\n    done\nelse\n    echo -e "\\033[1;31m[-] Error: No se encontró el binario agy. Iniciando shell interactivo...\\033[0m"\n    exec bash\nfi\n' > /usr/local/bin/agy-web-session \
+    && bash -c 'cat << "EOF" > /usr/local/bin/agy-web-session
+#!/usr/bin/env bash
+cd /workspaces/linux-kde-lite 2>/dev/null || cd "$HOME"
+export TERM=xterm-256color
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
+clear
+
+# TrueColor ANSI Gradients (Play Code Brand Orange-Gold, Antigravity Pixel Art Style)
+C1='\''\033[38;2;255;85;0m'\''
+C2='\''\033[38;2;255;115;0m'\''
+C3='\''\033[38;2;255;145;0m'\''
+C4='\''\033[38;2;255;175;0m'\''
+C5='\''\033[38;2;255;200;0m'\''
+C6='\''\033[38;2;255;220;25m'\''
+C7='\''\033[38;2;255;235;60m'\''
+
+R='\''\033[0m'\''
+WHITE='\''\033[1;37m'\''
+ORANGE='\''\033[1;38;2;255;165;0m'\''
+CYAN='\''\033[1;38;2;80;190;255m'\''
+GREEN='\''\033[1;38;2;50;215;75m'\''
+MUTED='\''\033[38;2;140;160;180m'\''
+DIVIDER='\''\033[38;2;60;80;110m'\''
+
+echo ""
+echo -e "  ${C1}   ▄██▄        ▄█   ▄██▄      ${R}${ORANGE}▶ PLAY CODE${R} ${WHITE}• Plataforma Educativa${R}"
+echo -e "  ${C2}  ▄██▀        ▄█▀    ▀██▄     ${R}  ${WHITE}Google Antigravity 2.0${R} ${CYAN}(Web AI Hub)${R}"
+echo -e "  ${C3} ▄██▀        ▄█▀      ▀██▄    ${R}  ${MUTED}¡Bienvenido/a a tu entorno interactivo de IA!${R}"
+echo -e "  ${C4}███▄        ▄█▀        ▄███   ${R}  ${GREEN}⚡ Modo: TURBO${R} ${MUTED}(Permisos auto-aprobados)${R}"
+echo -e "  ${C5} ▀██▄      ▄█▀        ▄██▀    ${R}  ${MUTED}Directorio:${R} ${CYAN}/workspaces/linux-kde-lite${R}"
+echo -e "  ${C6}  ▀██▄    ▄█▀        ▄██▀     ${R}  ${DIVIDER}──────────────────────────────────────────${R}"
+echo -e "  ${C7}   ▀██▄   █▀        ▄██▀      ${R}  ${CYAN}💡 Tip:${R} ${MUTED}Escribe tus instrucciones para comenzar${R}"
+echo ""
+
+AGY_BIN="/usr/local/bin/agy"
+[ ! -f "$AGY_BIN" ] && [ -f "/home/codespace/.gemini/bin/agy" ] && AGY_BIN="/home/codespace/.gemini/bin/agy"
+[ ! -f "$AGY_BIN" ] && AGY_BIN="$(command -v agy || echo "")"
+
+if [ -n "$AGY_BIN" ] && [ -x "$AGY_BIN" ]; then
+    while true; do
+        "$AGY_BIN" --add-dir="/workspaces/linux-kde-lite" --dangerously-skip-permissions "$@"
+        echo ""
+        echo -e "\033[1;33m[!] Sesión de Antigravity finalizada. Presiona ENTER para reiniciar...\033[0m"
+        read -r
+        clear
+    done
+else
+    echo -e "\033[1;31m[-] Error: No se encontró el binario agy. Iniciando shell interactivo...\033[0m"
+    exec bash
+fi
+EOF
+' \
     && chmod +x /usr/local/bin/agy-web-session
 
 
