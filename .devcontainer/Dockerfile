@@ -85,6 +85,12 @@ RUN [ ! -f /usr/bin/xdg-open.orig ] && cp /usr/bin/xdg-open /usr/bin/xdg-open.or
     && printf '#!/usr/bin/env bash\nURL="$1"\n[ -z "$URL" ] && exit 0\necho "[$(date -u)] xdg-open called with: $URL" >> /tmp/xdg-open.log\necho "$URL" > /tmp/last_oauth_url.txt\nchmod 666 /tmp/last_oauth_url.txt /tmp/xdg-open.log 2>/dev/null || true\nif [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then\n    KDE_PID=$(pgrep -f "plasmashell" | head -n 1)\n    if [ -n "$KDE_PID" ] && [ -r "/proc/$KDE_PID/environ" ]; then\n        KDE_DBUS=$(tr "\\0" "\\n" < "/proc/$KDE_PID/environ" | grep "^DBUS_SESSION_BUS_ADDRESS=")\n        [ -n "$KDE_DBUS" ] && export "$KDE_DBUS"\n    fi\nfi\nexport DISPLAY="${DISPLAY:-:1}"\nif command -v google-chrome >/dev/null 2>&1; then\n    nohup /usr/bin/google-chrome "$URL" >/dev/null 2>&1 &\nfi\nexit 0\n' > /usr/bin/xdg-open \
     && chmod +x /usr/bin/xdg-open
 
+# 3d. Instalar ttyd y sesión web interactiva de Antigravity en Puerto 3000
+RUN curl -fsSL -o /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64" \
+    && chmod +x /usr/local/bin/ttyd \
+    && printf '#!/usr/bin/env bash\ncd /workspaces/linux-kde-lite 2>/dev/null || cd "$HOME"\nexport TERM=xterm-256color\nexport LANG=C.UTF-8\nexport LC_ALL=C.UTF-8\nclear\necho -e "\\033[1;36m=========================================================="\necho -e " 🚀 Google Antigravity 2.0 — Web Interactive AI Hub"\necho -e " Directorio de trabajo: $(pwd)"\necho -e "==========================================================\\033[0m"\necho ""\nAGY_BIN="/usr/local/bin/agy"\n[ ! -f "$AGY_BIN" ] && [ -f "/home/codespace/.gemini/bin/agy" ] && AGY_BIN="/home/codespace/.gemini/bin/agy"\n[ ! -f "$AGY_BIN" ] && AGY_BIN="$(command -v agy || echo "")"\nif [ -n "$AGY_BIN" ] && [ -x "$AGY_BIN" ]; then\n    while true; do\n        "$AGY_BIN" --add-dir="/workspaces/linux-kde-lite" "$@"\n        echo ""\n        echo -e "\\033[1;33m[!] Sesión de Antigravity finalizada. Presiona ENTER para reiniciar...\\033[0m"\n        read -r\n        clear\n    done\nelse\n    echo -e "\\033[1;31m[-] Error: No se encontró el binario agy. Iniciando shell interactivo...\\033[0m"\n    exec bash\nfi\n' > /usr/local/bin/agy-web-session \
+    && chmod +x /usr/local/bin/agy-web-session
+
 
 # ---------------------------------------------------------------------------
 # 4. Configurar noVNC: página de redirección automática

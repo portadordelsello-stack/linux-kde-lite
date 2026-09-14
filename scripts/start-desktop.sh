@@ -118,45 +118,60 @@ done
 
 sleep 1
 
-# 9. Iniciar Antigravity Web Hub en puerto 3000
+# 9. Iniciar Antigravity 2.0 Web Interactive Hub en puerto 3000 (vía ttyd)
+if [ ! -x /usr/local/bin/ttyd ]; then
+    echo "[+] Descargando servidor web ttyd para Antigravity..."
+    sudo curl -fsSL -o /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64" 2>/dev/null || true
+    sudo chmod +x /usr/local/bin/ttyd 2>/dev/null || true
+fi
+
+if [ ! -f /usr/local/bin/agy-web-session ]; then
+    sudo bash -c 'cat << "EOF" > /usr/local/bin/agy-web-session
+#!/usr/bin/env bash
+cd /workspaces/linux-kde-lite 2>/dev/null || cd "$HOME"
+export TERM=xterm-256color
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
+clear
+echo -e "\033[1;36m=========================================================="
+echo -e " 🚀 Google Antigravity 2.0 — Web Interactive AI Hub"
+echo -e " Directorio de trabajo: $(pwd)"
+echo -e "==========================================================\033[0m"
+echo ""
+
 AGY_BIN="/usr/local/bin/agy"
-if [ ! -f "$AGY_BIN" ] && [ -f "/home/codespace/.gemini/bin/agy" ]; then
-    AGY_BIN="/home/codespace/.gemini/bin/agy"
+[ ! -f "$AGY_BIN" ] && [ -f "/home/codespace/.gemini/bin/agy" ] && AGY_BIN="/home/codespace/.gemini/bin/agy"
+[ ! -f "$AGY_BIN" ] && AGY_BIN="$(command -v agy || echo "")"
+
+if [ -n "$AGY_BIN" ] && [ -x "$AGY_BIN" ]; then
+    while true; do
+        "$AGY_BIN" --add-dir="/workspaces/linux-kde-lite" "$@"
+        echo ""
+        echo -e "\033[1;33m[!] Sesión de Antigravity finalizada. Presiona ENTER para reiniciar...\033[0m"
+        read -r
+        clear
+    done
+else
+    echo -e "\033[1;31m[-] Error: No se encontró el binario agy. Iniciando shell interactivo...\033[0m"
+    exec bash
 fi
-if [ ! -f "$AGY_BIN" ] && command -v agy >/dev/null 2>&1; then
-    AGY_BIN="$(command -v agy)"
+EOF
+chmod +x /usr/local/bin/agy-web-session' 2>/dev/null || true
 fi
 
-# Auto-descarga de fallback si agy no existe aún
-if [ ! -f "$AGY_BIN" ] && ! command -v "$AGY_BIN" >/dev/null 2>&1; then
-    echo "[+] Descargando Antigravity CLI oficial (agy)..."
-    TMP_DIR=$(mktemp -d)
-    if curl -sL "https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.0-5210873191596032/linux-x64/cli_linux_x64.tar.gz" | tar -xz -C "$TMP_DIR" 2>/dev/null; then
-        sudo mv "$TMP_DIR/antigravity" /usr/local/bin/agy 2>/dev/null || mv "$TMP_DIR/antigravity" /home/codespace/.gemini/bin/agy 2>/dev/null || true
-        sudo chmod +x /usr/local/bin/agy 2>/dev/null || chmod +x /home/codespace/.gemini/bin/agy 2>/dev/null || true
-        mkdir -p /home/codespace/.gemini/bin 2>/dev/null || true
-        ln -sf /usr/local/bin/agy /home/codespace/.gemini/bin/agy 2>/dev/null || true
-        [ -f "/usr/local/bin/agy" ] && AGY_BIN="/usr/local/bin/agy"
-        [ -f "/home/codespace/.gemini/bin/agy" ] && AGY_BIN="/home/codespace/.gemini/bin/agy"
-    fi
-    rm -rf "$TMP_DIR" 2>/dev/null || true
-fi
-
-if [ -f "$AGY_BIN" ] || command -v "$AGY_BIN" >/dev/null 2>&1; then
+if [ -x /usr/local/bin/ttyd ]; then
     if ! ss -tlpn 2>/dev/null | grep -E "(:3000\s)" >/dev/null 2>&1; then
         echo "[+] Iniciando Antigravity 2.0 Web Hub en el puerto 3000..."
-        export DISPLAY="${DISPLAY_NUM:-:1}"
-        unset BROWSER
-        if command -v script >/dev/null 2>&1; then
-            setsid script -q -c "\"$AGY_BIN\" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite" /dev/null </dev/null >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
-        else
-            setsid python3 -c '
-import pty, os, sys
-master, slave = pty.openpty()
-os.dup2(slave, 0)
-os.execlp(sys.argv[1], sys.argv[1], "--hub", "--hub-port=3000", "--app_data_dir=antigravity", "--add-dir=/workspaces/linux-kde-lite")
-' "$AGY_BIN" >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
-        fi
+        setsid nohup /usr/local/bin/ttyd \
+            --port 3000 \
+            --writable \
+            -t disableLeaveAlert=true \
+            -t titleFixed='Google Antigravity 2.0 Web Hub' \
+            -t fontSize=15 \
+            -t fontFamily='JetBrains Mono, Menlo, Consolas, monospace' \
+            -t 'theme={"background": "#141618", "foreground": "#f0f6fc", "cursor": "#58a6ff"}' \
+            /usr/local/bin/agy-web-session </dev/null >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
 
         # Esperar hasta que el puerto 3000 esté activo
         for check in {1..10}; do

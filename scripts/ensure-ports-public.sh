@@ -21,26 +21,19 @@ for arg in "$@"; do
     fi
 done
 
-# Función para iniciar Antigravity Web Hub desacoplado con PTY independiente
+# Función para iniciar Antigravity Web Hub interactivo vía ttyd en puerto 3000
 start_antigravity_hub() {
-    local agy_bin="/usr/local/bin/agy"
-    [ ! -f "$agy_bin" ] && [ -f "/home/codespace/.gemini/bin/agy" ] && agy_bin="/home/codespace/.gemini/bin/agy"
-    [ ! -f "$agy_bin" ] && command -v agy >/dev/null 2>&1 && agy_bin="$(command -v agy)"
-
-    if [ -x "$agy_bin" ] || command -v "$agy_bin" >/dev/null 2>&1; then
+    if [ -x /usr/local/bin/ttyd ] && [ -x /usr/local/bin/agy-web-session ]; then
         echo "[+] [Supervisor] Iniciando Antigravity 2.0 Web Hub en puerto 3000..."
-        export DISPLAY=":1"
-        unset BROWSER
-        if command -v script >/dev/null 2>&1; then
-            setsid script -q -c "\"$agy_bin\" --hub --hub-port=3000 --app_data_dir=antigravity --add-dir=/workspaces/linux-kde-lite" /dev/null </dev/null >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
-        else
-            setsid python3 -c '
-import pty, os, sys
-master, slave = pty.openpty()
-os.dup2(slave, 0)
-os.execlp(sys.argv[1], sys.argv[1], "--hub", "--hub-port=3000", "--app_data_dir=antigravity", "--add-dir=/workspaces/linux-kde-lite")
-' "$agy_bin" >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
-        fi
+        setsid nohup /usr/local/bin/ttyd \
+            --port 3000 \
+            --writable \
+            -t disableLeaveAlert=true \
+            -t titleFixed='Google Antigravity 2.0 Web Hub' \
+            -t fontSize=15 \
+            -t fontFamily='JetBrains Mono, Menlo, Consolas, monospace' \
+            -t 'theme={"background": "#141618", "foreground": "#f0f6fc", "cursor": "#58a6ff"}' \
+            /usr/local/bin/agy-web-session </dev/null >>"${LOG_DIR}/antigravity-hub.log" 2>&1 &
     fi
 }
 

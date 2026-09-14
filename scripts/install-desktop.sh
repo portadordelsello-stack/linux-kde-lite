@@ -139,6 +139,47 @@ if [ -f "/usr/local/bin/agy" ] && [ ! -f "/home/codespace/.gemini/bin/agy" ]; th
     ln -sf /usr/local/bin/agy /home/codespace/.gemini/bin/agy 2>/dev/null || true
 fi
 
+# Descargar e instalar ttyd (Web Terminal para Antigravity 2.0 Web Hub en Puerto 3000)
+if ! command -v ttyd >/dev/null 2>&1 && [ ! -f "/usr/local/bin/ttyd" ]; then
+    echo "[+] Instalando ttyd (Web Terminal)..."
+    sudo curl -fsSL -o /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64" 2>/dev/null || true
+    sudo chmod +x /usr/local/bin/ttyd 2>/dev/null || true
+fi
+
+# Instalar script de sesión interactiva de Antigravity
+sudo bash -c 'cat << "EOF" > /usr/local/bin/agy-web-session
+#!/usr/bin/env bash
+cd /workspaces/linux-kde-lite 2>/dev/null || cd "$HOME"
+export TERM=xterm-256color
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
+clear
+echo -e "\033[1;36m=========================================================="
+echo -e " 🚀 Google Antigravity 2.0 — Web Interactive AI Hub"
+echo -e " Directorio de trabajo: $(pwd)"
+echo -e "==========================================================\033[0m"
+echo ""
+
+AGY_BIN="/usr/local/bin/agy"
+[ ! -f "$AGY_BIN" ] && [ -f "/home/codespace/.gemini/bin/agy" ] && AGY_BIN="/home/codespace/.gemini/bin/agy"
+[ ! -f "$AGY_BIN" ] && AGY_BIN="$(command -v agy || echo "")"
+
+if [ -n "$AGY_BIN" ] && [ -x "$AGY_BIN" ]; then
+    while true; do
+        "$AGY_BIN" --add-dir="/workspaces/linux-kde-lite" "$@"
+        echo ""
+        echo -e "\033[1;33m[!] Sesión de Antigravity finalizada. Presiona ENTER para reiniciar...\033[0m"
+        read -r
+        clear
+    done
+else
+    echo -e "\033[1;31m[-] Error: No se encontró el binario agy. Iniciando shell interactivo...\033[0m"
+    exec bash
+fi
+EOF
+chmod +x /usr/local/bin/agy-web-session' 2>/dev/null || true
+
 # Configurar iconos y entradas de escritorio
 mkdir -p "$HOME/Desktop"
 [ -f "/opt/antigravity-ide/resources/app/resources/linux/code.png" ] && sudo cp /opt/antigravity-ide/resources/app/resources/linux/code.png /usr/share/pixmaps/antigravity-ide.png 2>/dev/null || true
