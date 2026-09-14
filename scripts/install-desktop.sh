@@ -158,6 +158,7 @@ clear
 echo -e "\033[1;36m=========================================================="
 echo -e " 🚀 Google Antigravity 2.0 — Web Interactive AI Hub"
 echo -e " Directorio de trabajo: $(pwd)"
+echo -e " Modo: ⚡ TURBO (Permisos auto-aprobados)"
 echo -e "==========================================================\033[0m"
 echo ""
 
@@ -167,7 +168,7 @@ AGY_BIN="/usr/local/bin/agy"
 
 if [ -n "$AGY_BIN" ] && [ -x "$AGY_BIN" ]; then
     while true; do
-        "$AGY_BIN" --add-dir="/workspaces/linux-kde-lite" "$@"
+        "$AGY_BIN" --add-dir="/workspaces/linux-kde-lite" --dangerously-skip-permissions "$@"
         echo ""
         echo -e "\033[1;33m[!] Sesión de Antigravity finalizada. Presiona ENTER para reiniciar...\033[0m"
         read -r
