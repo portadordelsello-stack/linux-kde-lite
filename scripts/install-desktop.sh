@@ -147,7 +147,7 @@ if ! command -v ttyd >/dev/null 2>&1 && [ ! -f "/usr/local/bin/ttyd" ]; then
 fi
 
 # Instalar script de sesión interactiva de Antigravity
-sudo bash -c 'cat << "EOF" > /usr/local/bin/agy-web-session
+sudo tee /usr/local/bin/agy-web-session >/dev/null << 'EOF'
 #!/usr/bin/env bash
 cd /workspaces/linux-kde-lite 2>/dev/null || cd "$HOME"
 export TERM=xterm-256color
@@ -200,7 +200,7 @@ else
     exec bash
 fi
 EOF
-chmod +x /usr/local/bin/agy-web-session' 2>/dev/null || true
+sudo chmod +x /usr/local/bin/agy-web-session 2>/dev/null || true
 
 # Configurar iconos y entradas de escritorio
 mkdir -p "$HOME/Desktop"

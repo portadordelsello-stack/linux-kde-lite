@@ -125,7 +125,7 @@ if [ ! -x /usr/local/bin/ttyd ]; then
     sudo chmod +x /usr/local/bin/ttyd 2>/dev/null || true
 fi
 
-sudo bash -c 'cat << "EOF" > /usr/local/bin/agy-web-session
+sudo tee /usr/local/bin/agy-web-session >/dev/null << 'EOF'
 #!/usr/bin/env bash
 cd /workspaces/linux-kde-lite 2>/dev/null || cd "$HOME"
 export TERM=xterm-256color
@@ -178,7 +178,7 @@ else
     exec bash
 fi
 EOF
-chmod +x /usr/local/bin/agy-web-session' 2>/dev/null || true
+sudo chmod +x /usr/local/bin/agy-web-session 2>/dev/null || true
 
 if [ -x /usr/local/bin/ttyd ]; then
     if ! ss -tlpn 2>/dev/null | grep -E "(:3000\s)" >/dev/null 2>&1; then

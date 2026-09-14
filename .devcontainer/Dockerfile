@@ -88,7 +88,7 @@ RUN [ ! -f /usr/bin/xdg-open.orig ] && cp /usr/bin/xdg-open /usr/bin/xdg-open.or
 # 3d. Instalar ttyd y sesión web interactiva de Antigravity en Puerto 3000
 RUN curl -fsSL -o /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64" \
     && chmod +x /usr/local/bin/ttyd \
-    && bash -c 'cat << "EOF" > /usr/local/bin/agy-web-session
+    && tee /usr/local/bin/agy-web-session >/dev/null << 'EOF'
 #!/usr/bin/env bash
 cd /workspaces/linux-kde-lite 2>/dev/null || cd "$HOME"
 export TERM=xterm-256color
@@ -98,21 +98,21 @@ export LC_ALL=C.UTF-8
 clear
 
 # TrueColor ANSI Gradients (Play Code Brand Orange-Gold, Antigravity Pixel Art Style)
-C1='\''\033[38;2;255;85;0m'\''
-C2='\''\033[38;2;255;115;0m'\''
-C3='\''\033[38;2;255;145;0m'\''
-C4='\''\033[38;2;255;175;0m'\''
-C5='\''\033[38;2;255;200;0m'\''
-C6='\''\033[38;2;255;220;25m'\''
-C7='\''\033[38;2;255;235;60m'\''
+C1='\033[38;2;255;85;0m'
+C2='\033[38;2;255;115;0m'
+C3='\033[38;2;255;145;0m'
+C4='\033[38;2;255;175;0m'
+C5='\033[38;2;255;200;0m'
+C6='\033[38;2;255;220;25m'
+C7='\033[38;2;255;235;60m'
 
-R='\''\033[0m'\''
-WHITE='\''\033[1;37m'\''
-ORANGE='\''\033[1;38;2;255;165;0m'\''
-CYAN='\''\033[1;38;2;80;190;255m'\''
-GREEN='\''\033[1;38;2;50;215;75m'\''
-MUTED='\''\033[38;2;140;160;180m'\''
-DIVIDER='\''\033[38;2;60;80;110m'\''
+R='\033[0m'
+WHITE='\033[1;37m'
+ORANGE='\033[1;38;2;255;165;0m'
+CYAN='\033[1;38;2;80;190;255m'
+GREEN='\033[1;38;2;50;215;75m'
+MUTED='\033[38;2;140;160;180m'
+DIVIDER='\033[38;2;60;80;110m'
 
 echo ""
 echo -e "  ${C1}   ▄██▄        ▄█   ▄██▄      ${R}${ORANGE}▶ PLAY CODE${R} ${WHITE}• Plataforma Educativa${R}"
@@ -141,7 +141,6 @@ else
     exec bash
 fi
 EOF
-' \
     && chmod +x /usr/local/bin/agy-web-session
 
 
