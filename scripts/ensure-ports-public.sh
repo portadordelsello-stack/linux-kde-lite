@@ -9,7 +9,7 @@ set -euo pipefail
 # PÚBLICA, incluso si el usuario desconecta o cierra la interfaz de VS Code.
 # =============================================================================
 
-TARGET_PORTS=(8080 6080 3000)
+TARGET_PORTS=(8080 6080 3000 4000)
 DAEMON_PID_FILE="/tmp/.ensure-ports-public-daemon.pid"
 LOG_DIR="${HOME:-/home/codespace}/.vnc"
 mkdir -p "$LOG_DIR" 2>/dev/null || true
@@ -40,8 +40,9 @@ start_antigravity_hub() {
 # Función para iniciar websockify (noVNC)
 start_websockify() {
     local port="$1"
+    local vnc_port="${2:-5901}"
     echo "[+] [Supervisor] Iniciando puente web noVNC en puerto ${port}..."
-    websockify -D --web /usr/share/novnc "${port}" "localhost:5901" 2>/dev/null || true
+    websockify -D --web /usr/share/novnc "${port}" "localhost:${vnc_port}" 2>/dev/null || true
 }
 
 # Función para iniciar TigerVNC
@@ -62,19 +63,33 @@ supervise_services() {
 
     # 2. websockify en puerto 8080
     if ! ss -tlpn 2>/dev/null | grep -E "(:8080\s)" >/dev/null 2>&1; then
-        start_websockify 8080
+        start_websockify 8080 5901
         restarted=true
     fi
 
     # 3. websockify en puerto 6080
     if ! ss -tlpn 2>/dev/null | grep -E "(:6080\s)" >/dev/null 2>&1; then
-        start_websockify 6080
+        start_websockify 6080 5901
         restarted=true
     fi
 
     # 4. Antigravity 2.0 Web Hub en puerto 3000
     if ! ss -tlpn 2>/dev/null | grep -E "(:3000\s)" >/dev/null 2>&1; then
         start_antigravity_hub
+        restarted=true
+    fi
+
+    # 5. TigerVNC en :2 para Antigravity IDE (puerto 5902)
+    if ! ss -tlpn 2>/dev/null | grep -E "(:5902\s)" >/dev/null 2>&1; then
+        if [ -x "${HOME:-/home/codespace}/.vnc/xstartup-ide" ]; then
+            setsid nohup vncserver :2 -geometry 1366x768 -depth 24 -localhost yes -SecurityTypes None -cleanstale -noreset -xstartup "${HOME:-/home/codespace}/.vnc/xstartup-ide" </dev/null >> "${LOG_DIR}/vncserver-ide.log" 2>&1 || true
+            restarted=true
+        fi
+    fi
+
+    # 6. websockify en puerto 4000
+    if ! ss -tlpn 2>/dev/null | grep -E "(:4000\s)" >/dev/null 2>&1; then
+        start_websockify 4000 5902
         restarted=true
     fi
 

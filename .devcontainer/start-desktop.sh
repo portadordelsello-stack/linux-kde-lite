@@ -206,9 +206,82 @@ if [ -x /usr/local/bin/ttyd ]; then
     fi
 fi
 
+# 9b. Iniciar Antigravity IDE 2.x en Display :2 y websockify en puerto 4000
+DISP_IDE=":2"
+VNC_PORT_IDE="5902"
+WEB_PORT_IDE="4000"
+
+if ! command -v openbox >/dev/null 2>&1; then
+    sudo apt-get update -y >/dev/null 2>&1 || true
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openbox >/dev/null 2>&1 || true
+fi
+
+mkdir -p "$HOME/.config/openbox"
+cat << 'OBCFG' > "$HOME/.config/openbox/rc.xml"
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <applications>
+    <application class="*">
+      <decor>no</decor>
+      <maximized>yes</maximized>
+      <fullscreen>yes</fullscreen>
+    </application>
+  </applications>
+</openbox_config>
+OBCFG
+
+mkdir -p "$HOME/.vnc"
+cat << 'IDECFG' > "$HOME/.vnc/xstartup-ide"
+#!/bin/bash
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+export DISPLAY=":2"
+export XDG_CURRENT_DESKTOP=Antigravity
+export XDG_RUNTIME_DIR="/tmp/runtime-${USER:-codespace}"
+mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null || true
+chmod 0700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
+
+if command -v autocutsel >/dev/null 2>&1; then
+    autocutsel -fork
+    autocutsel -selection CLIPBOARD -fork
+fi
+
+if command -v openbox >/dev/null 2>&1; then
+    openbox &
+fi
+
+while true; do
+    if [ -x /usr/local/bin/antigravity-ide ]; then
+        /usr/local/bin/antigravity-ide --no-sandbox --disable-gpu --disable-dev-shm-usage /workspaces/linux-kde-lite
+    fi
+    sleep 2
+done
+IDECFG
+chmod +x "$HOME/.vnc/xstartup-ide"
+
+if ! ss -tlpn 2>/dev/null | grep -E "(:${VNC_PORT_IDE}\s)" >/dev/null 2>&1; then
+    echo "[+] Iniciando TigerVNC en ${DISP_IDE} para Antigravity IDE (puerto ${VNC_PORT_IDE})..."
+    rm -f "/tmp/.X2-lock" "/tmp/.X11-unix/X2" 2>/dev/null || true
+    sudo rm -f "/tmp/.X2-lock" "/tmp/.X11-unix/X2" 2>/dev/null || true
+    setsid nohup vncserver "${DISP_IDE}" \
+        -geometry 1366x768 \
+        -depth 24 \
+        -localhost yes \
+        -SecurityTypes None \
+        -cleanstale \
+        -noreset \
+        -xstartup "$HOME/.vnc/xstartup-ide" \
+        </dev/null >> "${LOG_DIR}/vncserver-ide.log" 2>&1 || true
+fi
+
+if ! ss -tlpn 2>/dev/null | grep -E "(:${WEB_PORT_IDE}\s)" >/dev/null 2>&1; then
+    echo "[+] Iniciando websockify en puerto ${WEB_PORT_IDE} para Antigravity IDE..."
+    websockify -D --web /usr/share/novnc "${WEB_PORT_IDE}" "localhost:${VNC_PORT_IDE}"
+fi
+
 # 10. Asegurar visibilidad pública de los puertos y supervisión continua en segundo plano
 if [ -n "${CODESPACE_NAME:-}" ]; then
-    echo "[+] Iniciando supervisor de puertos y servicios (8080, 6080, 3000)..."
+    echo "[+] Iniciando supervisor de puertos y servicios (8080, 6080, 3000, 4000)..."
     ENSURE_BIN="/usr/local/bin/ensure-ports-public.sh"
     if [ ! -f "$ENSURE_BIN" ] && [ -f "/workspaces/linux-kde-lite/scripts/ensure-ports-public.sh" ]; then
         ENSURE_BIN="/workspaces/linux-kde-lite/scripts/ensure-ports-public.sh"
@@ -222,7 +295,8 @@ echo "=========================================================="
 echo " ¡Escritorio KDE Plasma Lite y Antigravity Web listos!"
 echo "=========================================================="
 echo " Acceso Web:"
-echo " 1. Escritorio KDE (noVNC): https://${CODESPACE_NAME:-codespace}-8080.app.github.dev/vnc.html"
-echo " 2. Escritorio KDE Alt:     https://${CODESPACE_NAME:-codespace}-6080.app.github.dev/vnc.html"
-echo " 3. Antigravity 2.0 Hub:    https://${CODESPACE_NAME:-codespace}-3000.app.github.dev/"
+echo " 1. Escritorio KDE (noVNC):      https://${CODESPACE_NAME:-codespace}-8080.app.github.dev/vnc.html"
+echo " 2. Escritorio KDE Alt:          https://${CODESPACE_NAME:-codespace}-6080.app.github.dev/vnc.html"
+echo " 3. Antigravity CLI (ttyd):      https://${CODESPACE_NAME:-codespace}-3000.app.github.dev/"
+echo " 4. Antigravity IDE 2.0 Web:     https://${CODESPACE_NAME:-codespace}-4000.app.github.dev/vnc.html"
 echo "=========================================================="

@@ -8,7 +8,7 @@
     "memory": "16gb",
     "storage": "32gb"
   },
-  "forwardPorts": [8080, 6080, 3000],
+  "forwardPorts": [8080, 6080, 3000, 4000],
   "portsAttributes": {
     "8080": {
       "label": "KDE Desktop (noVNC)",
@@ -21,7 +21,12 @@
       "visibility": "public"
     },
     "3000": {
-      "label": "Antigravity Web Hub",
+      "label": "Antigravity CLI (ttyd)",
+      "onAutoForward": "silent",
+      "visibility": "public"
+    },
+    "4000": {
+      "label": "Antigravity IDE 2.0 Web",
       "onAutoForward": "silent",
       "visibility": "public"
     }
