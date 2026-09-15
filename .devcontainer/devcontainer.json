@@ -21,7 +21,7 @@
       "visibility": "public"
     }
   },
-  "postStartCommand": "/usr/local/bin/start-desktop.sh",
+  "postStartCommand": "sudo cp -f /workspaces/linux-kde-lite/scripts/start-desktop.sh /usr/local/bin/start-desktop.sh 2>/dev/null || true; sudo cp -f /workspaces/linux-kde-lite/scripts/ensure-ports-public.sh /usr/local/bin/ensure-ports-public.sh 2>/dev/null || true; sudo chmod +x /usr/local/bin/*.sh 2>/dev/null || true; /usr/local/bin/start-desktop.sh",
   "postAttachCommand": "nohup /usr/local/bin/ensure-ports-public.sh >/tmp/ensure-ports-public.log 2>&1 &",
   "customizations": {
     "vscode": {
