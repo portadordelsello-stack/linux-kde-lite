@@ -85,63 +85,9 @@ RUN [ ! -f /usr/bin/xdg-open.orig ] && cp /usr/bin/xdg-open /usr/bin/xdg-open.or
     && printf '#!/usr/bin/env bash\nURL="$1"\n[ -z "$URL" ] && exit 0\necho "[$(date -u)] xdg-open called with: $URL" >> /tmp/xdg-open.log\necho "$URL" > /tmp/last_oauth_url.txt\nchmod 666 /tmp/last_oauth_url.txt /tmp/xdg-open.log 2>/dev/null || true\nif [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then\n    KDE_PID=$(pgrep -f "plasmashell" | head -n 1)\n    if [ -n "$KDE_PID" ] && [ -r "/proc/$KDE_PID/environ" ]; then\n        KDE_DBUS=$(tr "\\0" "\\n" < "/proc/$KDE_PID/environ" | grep "^DBUS_SESSION_BUS_ADDRESS=")\n        [ -n "$KDE_DBUS" ] && export "$KDE_DBUS"\n    fi\nfi\nexport DISPLAY="${DISPLAY:-:1}"\nif command -v google-chrome >/dev/null 2>&1; then\n    nohup /usr/bin/google-chrome "$URL" >/dev/null 2>&1 &\nfi\nexit 0\n' > /usr/bin/xdg-open \
     && chmod +x /usr/bin/xdg-open
 
-# 3d. Instalar ttyd y sesión web interactiva de Antigravity en Puerto 3000
+# 3d. Instalar ttyd para sesión web interactiva de Antigravity en Puerto 3000
 RUN curl -fsSL -o /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.x86_64" \
-    && chmod +x /usr/local/bin/ttyd \
-    && tee /usr/local/bin/agy-web-session >/dev/null << 'EOF'
-#!/usr/bin/env bash
-cd /workspaces/linux-kde-lite 2>/dev/null || cd "$HOME"
-export TERM=xterm-256color
-export LANG=C.UTF-8
-export LC_ALL=C.UTF-8
-
-clear
-
-# TrueColor ANSI Gradients (Play Code Brand Orange-Gold, Antigravity Pixel Art Style)
-C1='\033[38;2;255;85;0m'
-C2='\033[38;2;255;115;0m'
-C3='\033[38;2;255;145;0m'
-C4='\033[38;2;255;175;0m'
-C5='\033[38;2;255;200;0m'
-C6='\033[38;2;255;220;25m'
-C7='\033[38;2;255;235;60m'
-
-R='\033[0m'
-WHITE='\033[1;37m'
-ORANGE='\033[1;38;2;255;165;0m'
-CYAN='\033[1;38;2;80;190;255m'
-GREEN='\033[1;38;2;50;215;75m'
-MUTED='\033[38;2;140;160;180m'
-DIVIDER='\033[38;2;60;80;110m'
-
-echo ""
-echo -e "  ${C1}   ▄██▄        ▄█   ▄██▄      ${R}${ORANGE}▶ PLAY CODE${R} ${WHITE}• Plataforma Educativa${R}"
-echo -e "  ${C2}  ▄██▀        ▄█▀    ▀██▄     ${R}  ${WHITE}Google Antigravity 2.0${R} ${CYAN}(Web AI Hub)${R}"
-echo -e "  ${C3} ▄██▀        ▄█▀      ▀██▄    ${R}  ${MUTED}¡Bienvenido/a a tu entorno interactivo de IA!${R}"
-echo -e "  ${C4}███▄        ▄█▀        ▄███   ${R}  ${GREEN}⚡ Modo: TURBO${R} ${MUTED}(Permisos auto-aprobados)${R}"
-echo -e "  ${C5} ▀██▄      ▄█▀        ▄██▀    ${R}  ${MUTED}Directorio:${R} ${CYAN}/workspaces/linux-kde-lite${R}"
-echo -e "  ${C6}  ▀██▄    ▄█▀        ▄██▀     ${R}  ${DIVIDER}──────────────────────────────────────────${R}"
-echo -e "  ${C7}   ▀██▄   █▀        ▄██▀      ${R}  ${CYAN}💡 Tip:${R} ${MUTED}Escribe tus instrucciones para comenzar${R}"
-echo ""
-
-AGY_BIN="/usr/local/bin/agy"
-[ ! -f "$AGY_BIN" ] && [ -f "/home/codespace/.gemini/bin/agy" ] && AGY_BIN="/home/codespace/.gemini/bin/agy"
-[ ! -f "$AGY_BIN" ] && AGY_BIN="$(command -v agy || echo "")"
-
-if [ -n "$AGY_BIN" ] && [ -x "$AGY_BIN" ]; then
-    while true; do
-        "$AGY_BIN" --add-dir="/workspaces/linux-kde-lite" --dangerously-skip-permissions "$@"
-        echo ""
-        echo -e "\033[1;33m[!] Sesión de Antigravity finalizada. Presiona ENTER para reiniciar...\033[0m"
-        read -r
-        clear
-    done
-else
-    echo -e "\033[1;31m[-] Error: No se encontró el binario agy. Iniciando shell interactivo...\033[0m"
-    exec bash
-fi
-EOF
-    && chmod +x /usr/local/bin/agy-web-session
+    && chmod +x /usr/local/bin/ttyd
 
 
 # ---------------------------------------------------------------------------
